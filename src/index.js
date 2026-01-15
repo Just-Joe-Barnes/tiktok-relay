@@ -13,6 +13,8 @@ const {
     PORT = 3000,
 } = process.env;
 
+const RECONNECT_DELAY_MS = parseInt(process.env.RECONNECT_DELAY_MS || '30000', 10);
+
 if (!TIKTOK_USERNAME || !API_BASE_URL || !RELAY_SECRET) {
     console.error('Missing required env vars: TIKTOK_USERNAME, API_BASE_URL, RELAY_SECRET');
     process.exit(1);
@@ -104,13 +106,30 @@ const connectToTikTok = () => {
         enableExtendedGiftInfo: true,
     });
 
-    connection.connect()
-        .then(state => {
-            console.log(`[relay] connected to ${TIKTOK_USERNAME} (roomId: ${state.roomId})`);
-        })
-        .catch(err => {
-            console.error('[relay] failed to connect:', err.message || err);
-        });
+    let reconnectTimer = null;
+
+    const scheduleReconnect = (reason) => {
+        if (reconnectTimer) return;
+        const delaySeconds = Math.max(1, Math.floor(RECONNECT_DELAY_MS / 1000));
+        console.warn(`[relay] reconnecting in ${delaySeconds}s (${reason})`);
+        reconnectTimer = setTimeout(() => {
+            reconnectTimer = null;
+            connectNow();
+        }, RECONNECT_DELAY_MS);
+    };
+
+    const connectNow = () => {
+        connection.connect()
+            .then(state => {
+                console.log(`[relay] connected to ${TIKTOK_USERNAME} (roomId: ${state.roomId})`);
+            })
+            .catch(err => {
+                console.error('[relay] failed to connect:', err.message || err);
+                scheduleReconnect('connect-failed');
+            });
+    };
+
+    connectNow();
 
     connection.on('gift', async (data) => {
         try {
@@ -137,12 +156,13 @@ const connectToTikTok = () => {
     });
 
     connection.on('disconnected', () => {
-        console.warn('[relay] disconnected, retrying in 5s...');
-        setTimeout(() => connection.connect().catch(() => null), 5000);
+        console.warn('[relay] disconnected');
+        scheduleReconnect('disconnected');
     });
 
     connection.on('error', (err) => {
         console.error('[relay] connection error:', err.message || err);
+        scheduleReconnect('error');
     });
 
     return connection;
