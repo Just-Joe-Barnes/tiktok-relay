@@ -6,6 +6,9 @@ require('dotenv').config();
 
 const {
     TIKTOK_USERNAME,
+    TIKTOK_SESSION_ID,
+    TIKTOK_TT_TARGET_IDC,
+    TIKTOK_CONNECT_WITH_UNIQUE_ID,
     API_BASE_URL,
     RELAY_SECRET,
     STREAMER_ID,
@@ -101,9 +104,17 @@ const postEvent = async (payload) => {
 };
 
 const connectToTikTok = () => {
+    const connectWithUniqueId = String(TIKTOK_CONNECT_WITH_UNIQUE_ID || '')
+        .trim()
+        .toLowerCase();
+    const useUniqueId = connectWithUniqueId === '1' || connectWithUniqueId === 'true' || connectWithUniqueId === 'yes';
+
     const connection = new WebcastPushConnection(TIKTOK_USERNAME, {
         processInitialData: false,
         enableExtendedGiftInfo: true,
+        sessionId: TIKTOK_SESSION_ID || null,
+        ttTargetIdc: TIKTOK_TT_TARGET_IDC || null,
+        connectWithUniqueId: useUniqueId,
     });
 
     let reconnectTimer = null;
