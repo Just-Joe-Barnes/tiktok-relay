@@ -1,6 +1,6 @@
 ﻿const express = require('express');
 const axios = require('axios');
-const { WebcastPushConnection } = require('tiktok-live-connector');
+const { WebcastPushConnection, SignConfig } = require('tiktok-live-connector');
 
 require('dotenv').config();
 
@@ -9,6 +9,7 @@ const {
     TIKTOK_SESSION_ID,
     TIKTOK_TT_TARGET_IDC,
     TIKTOK_CONNECT_WITH_UNIQUE_ID,
+    TIKTOK_SIGN_API_KEY,
     API_BASE_URL,
     RELAY_SECRET,
     STREAMER_ID,
@@ -108,6 +109,10 @@ const connectToTikTok = () => {
         .trim()
         .toLowerCase();
     const useUniqueId = connectWithUniqueId === '1' || connectWithUniqueId === 'true' || connectWithUniqueId === 'yes';
+
+    if (TIKTOK_SIGN_API_KEY) {
+        SignConfig.apiKey = TIKTOK_SIGN_API_KEY;
+    }
 
     const connection = new WebcastPushConnection(TIKTOK_USERNAME, {
         processInitialData: false,
