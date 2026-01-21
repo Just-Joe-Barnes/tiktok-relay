@@ -9,6 +9,9 @@ const {
     TIKTOK_SESSION_ID,
     TIKTOK_TT_TARGET_IDC,
     TIKTOK_CONNECT_WITH_UNIQUE_ID,
+    TIKTOK_FETCH_ROOMINFO,
+    TIKTOK_FORCE_CONNECT,
+    TIKTOK_CONNECT_FALLBACK,
     TIKTOK_SIGN_API_KEY,
     API_BASE_URL,
     RELAY_SECRET,
@@ -36,6 +39,14 @@ const buildEndpoint = () => {
     const base = normalizeBaseUrl(API_BASE_URL);
     const path = EVENT_ENDPOINT.startsWith('/') ? EVENT_ENDPOINT : `/${EVENT_ENDPOINT}`;
     return `${base}${path}`;
+};
+
+const parseBoolean = (value, fallback = false) => {
+    if (value === undefined || value === null || value === '') return fallback;
+    const normalized = String(value).trim().toLowerCase();
+    if (['1', 'true', 'yes', 'y', 'on'].includes(normalized)) return true;
+    if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) return false;
+    return fallback;
 };
 
 const resolveGiftCoins = (data) => {
@@ -104,11 +115,16 @@ const postEvent = async (payload) => {
     });
 };
 
-const connectToTikTok = () => {
-    const connectWithUniqueId = String(TIKTOK_CONNECT_WITH_UNIQUE_ID || '')
-        .trim()
-        .toLowerCase();
-    const useUniqueId = connectWithUniqueId === '1' || connectWithUniqueId === 'true' || connectWithUniqueId === 'yes';
+let fallbackAttempted = false;
+
+const connectToTikTok = (forceUseUniqueId) => {
+    const useUniqueId = typeof forceUseUniqueId === 'boolean'
+        ? forceUseUniqueId
+        : parseBoolean(TIKTOK_CONNECT_WITH_UNIQUE_ID, false);
+    const allowFallback = parseBoolean(TIKTOK_CONNECT_FALLBACK, true);
+    const fetchRoomInfoOnConnect = parseBoolean(TIKTOK_FORCE_CONNECT, false)
+        ? false
+        : parseBoolean(TIKTOK_FETCH_ROOMINFO, true);
 
     if (TIKTOK_SIGN_API_KEY) {
         SignConfig.apiKey = TIKTOK_SIGN_API_KEY;
@@ -120,6 +136,7 @@ const connectToTikTok = () => {
         sessionId: TIKTOK_SESSION_ID || null,
         ttTargetIdc: TIKTOK_TT_TARGET_IDC || null,
         connectWithUniqueId: useUniqueId,
+        fetchRoomInfoOnConnect,
     });
 
     let reconnectTimer = null;
@@ -137,10 +154,27 @@ const connectToTikTok = () => {
     const connectNow = () => {
         connection.connect()
             .then(state => {
-                console.log(`[relay] connected to ${TIKTOK_USERNAME} (roomId: ${state.roomId})`);
+                console.log(`[relay] connected to ${TIKTOK_USERNAME} (roomId: ${state.roomId}) [uniqueId=${useUniqueId}]`);
             })
             .catch(err => {
-                console.error('[relay] failed to connect:', err.message || err);
+                const message = err?.message || String(err);
+                console.error('[relay] failed to connect:', message);
+
+                const offlineMatch = /offline|not online|room.*not.*found/i.test(message);
+                if (allowFallback && offlineMatch && !fallbackAttempted && typeof forceUseUniqueId !== 'boolean') {
+                    fallbackAttempted = true;
+                    console.warn(`[relay] offline error detected. Retrying with connectWithUniqueId=${!useUniqueId}.`);
+                    try {
+                        if (typeof connection.disconnect === 'function') {
+                            connection.disconnect();
+                        }
+                    } catch (disconnectError) {
+                        console.warn('[relay] error while disconnecting prior connection:', disconnectError?.message || disconnectError);
+                    }
+                    connectToTikTok(!useUniqueId);
+                    return;
+                }
+
                 scheduleReconnect('connect-failed');
             });
     };
