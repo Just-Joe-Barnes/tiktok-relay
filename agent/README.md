@@ -31,7 +31,7 @@ Put sound files in `agent/public/sounds`. Default rules:
 - `Heart Me` -> `/sounds/heart-me.mp3`
 - `Rose` -> `/sounds/rose.mp3`
 
-Gift streaks play once at the end (when `repeatEnd` is true).
+Gift streaks play once at the start (when `repeatCount` is 1).
 
 Use the "Enable Audio" button once to allow browser audio playback.
 

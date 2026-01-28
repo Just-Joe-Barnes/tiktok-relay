@@ -90,7 +90,9 @@ const handleGiftSounds = (event) => {
     if (!rule) return;
 
     if (event.giftType === 1 && !event.repeatEnd) {
-        return;
+        if (Number(event.repeatCount || 1) !== 1) {
+            return;
+        }
     }
 
     void playSound(rule.sound);
