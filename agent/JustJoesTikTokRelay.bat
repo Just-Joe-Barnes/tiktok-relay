@@ -1,46 +1,42 @@
 @echo off
-setlocal
-set SCRIPT_DIR=%~dp0
-cd /d %SCRIPT_DIR%
+setlocal EnableExtensions
+set "SCRIPT_DIR=%~dp0"
+cd /d "%SCRIPT_DIR%"
 
-where node >nul 2>nul || (
+where node >nul 2>nul
+if errorlevel 1 (
   echo Node.js not found. Install Node 18+ and retry.
   pause
   exit /b 1
 )
 
-where npm >nul 2>nul || (
+where npm >nul 2>nul
+if errorlevel 1 (
   echo npm not found. Reinstall Node.js and retry.
   pause
   exit /b 1
 )
 
-if not exist node_modules (
-  echo Installing dependencies...
-  npm install
-  if errorlevel 1 (
-    echo npm install failed.
-    pause
-    exit /b 1
-  )
-)
-
-if not exist node_modules\\busboy (
-  echo Updating dependencies (busboy missing)...
-  npm install
-  if errorlevel 1 (
-    echo npm install failed.
-    pause
-    exit /b 1
-  )
-)
+if not exist "node_modules" call :install
+if not exist "node_modules\busboy" call :install
 
 start "" http://localhost:5177
 echo Starting agent...
-set LOG_FILE=%SCRIPT_DIR%agent-start.log
+set "LOG_FILE=%SCRIPT_DIR%agent-start.log"
 echo ===== %DATE% %TIME% ===== > "%LOG_FILE%"
 npm start >> "%LOG_FILE%" 2>&1
 echo Agent exited with code %errorlevel%.
 echo --- Agent log ---
 type "%LOG_FILE%"
 pause
+exit /b
+
+:install
+echo Installing dependencies...
+npm install
+if errorlevel 1 (
+  echo npm install failed.
+  pause
+  exit /b 1
+)
+exit /b 0
