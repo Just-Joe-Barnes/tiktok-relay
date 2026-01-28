@@ -6,6 +6,7 @@ const fs = require('fs');
 const Busboy = require('busboy');
 const EventSource = require('eventsource');
 const OBSWebSocket = require('obs-websocket-js').default;
+const WebSocket = require('ws');
 const { URL } = require('url');
 
 require('dotenv').config();
@@ -22,6 +23,9 @@ const RULES_FILE = path.join(DATA_DIR, 'obs-rules.json');
 const OBS_WS_URL = process.env.OBS_WS_URL || 'ws://localhost:4455';
 const OBS_WS_PASSWORD = process.env.OBS_WS_PASSWORD || '';
 const OBS_AUTO_CONNECT = process.env.OBS_AUTO_CONNECT !== 'false';
+const STREAMERBOT_WS_URL = process.env.STREAMERBOT_WS_URL || 'ws://127.0.0.1:8080/';
+const STREAMERBOT_WS_PASSWORD = process.env.STREAMERBOT_WS_PASSWORD || '';
+const STREAMERBOT_AUTO_CONNECT = process.env.STREAMERBOT_AUTO_CONNECT !== 'false';
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -42,6 +46,12 @@ let obsConnecting = false;
 const ruleState = {
     rules: [],
 };
+
+let sbSocket = null;
+let sbConnected = false;
+let sbLastError = null;
+let sbRequestId = 1;
+const sbPending = new Map();
 
 app.get('/config', (_req, res) => {
     res.json({
@@ -102,6 +112,79 @@ obs.on('ConnectionClosed', () => {
     console.warn('[agent] OBS disconnected');
 });
 
+const sendSbRequest = (payload) => new Promise((resolve, reject) => {
+    if (!sbConnected || !sbSocket || sbSocket.readyState !== WebSocket.OPEN) {
+        reject(new Error('Streamer.bot not connected'));
+        return;
+    }
+    const id = payload.id || `sb_${sbRequestId++}`;
+    payload.id = id;
+    sbPending.set(id, { resolve, reject, createdAt: Date.now() });
+    sbSocket.send(JSON.stringify(payload));
+});
+
+const connectStreamerBot = () => {
+    if (!STREAMERBOT_AUTO_CONNECT || sbConnected || sbSocket) return;
+    sbLastError = null;
+    sbSocket = new WebSocket(STREAMERBOT_WS_URL);
+
+    sbSocket.on('open', () => {
+        sbConnected = true;
+        console.log('[agent] Streamer.bot connected');
+        if (STREAMERBOT_WS_PASSWORD) {
+            // If auth is required, streamer.bot expects an Authenticate request.
+            sendSbRequest({ request: 'Authenticate', password: STREAMERBOT_WS_PASSWORD })
+                .catch((err) => {
+                    sbLastError = err.message || String(err);
+                    console.warn('[agent] Streamer.bot auth failed:', sbLastError);
+                });
+        }
+    });
+
+    sbSocket.on('message', (data) => {
+        try {
+            const message = JSON.parse(data.toString());
+            if (message?.id && sbPending.has(message.id)) {
+                const pending = sbPending.get(message.id);
+                sbPending.delete(message.id);
+                if (message.status === 'error' || message.error) {
+                    pending.reject(new Error(message.error || 'Streamer.bot error'));
+                } else {
+                    pending.resolve(message);
+                }
+            }
+        } catch (err) {
+            // ignore malformed payloads
+        }
+    });
+
+    sbSocket.on('close', () => {
+        sbConnected = false;
+        sbSocket = null;
+        console.warn('[agent] Streamer.bot disconnected');
+    });
+
+    sbSocket.on('error', (err) => {
+        sbLastError = err.message || String(err);
+        console.warn('[agent] Streamer.bot error:', sbLastError);
+    });
+};
+
+const getStreamerBotActions = async () => {
+    const response = await sendSbRequest({ request: 'GetActions' });
+    return response.actions || [];
+};
+
+const doStreamerBotAction = async ({ id, name, args }) => {
+    const action = {};
+    if (id) action.id = id;
+    if (name) action.name = name;
+    if (!action.id && !action.name) {
+        throw new Error('Missing Streamer.bot action id or name');
+    }
+    await sendSbRequest({ request: 'DoAction', action, args: args || {} });
+};
+
 const ensureObs = async () => {
     if (!obsConnected) {
         await connectObs();
@@ -160,6 +243,20 @@ const runObsAction = async (action) => {
     }
 };
 
+const runStreamerBotAction = async (action) => {
+    if (!sbConnected) {
+        connectStreamerBot();
+    }
+    if (!sbConnected) {
+        throw new Error('Streamer.bot not connected');
+    }
+    await doStreamerBotAction({
+        id: action.actionId,
+        name: action.actionName,
+        args: action.args || {},
+    });
+};
+
 const applyRules = async (event) => {
     const rules = ruleState.rules.filter((rule) => rule.enabled !== false);
     if (!rules.length) return;
@@ -176,7 +273,11 @@ const applyRules = async (event) => {
         if (match.field === 'command' && expected && command !== expected) continue;
 
         try {
-            await runObsAction(rule.action || {});
+            if (rule.action?.type === 'streamerbotAction') {
+                await runStreamerBotAction(rule.action);
+            } else {
+                await runObsAction(rule.action || {});
+            }
             console.log(`[agent] rule fired: ${rule.name || rule.id}`);
         } catch (err) {
             console.warn('[agent] rule failed:', err.message || err);
@@ -307,6 +408,24 @@ app.post('/upload-sound', (req, res) => {
     });
 
     req.pipe(busboy);
+});
+
+app.get('/sb/status', (_req, res) => {
+    res.json({
+        connected: sbConnected,
+        url: STREAMERBOT_WS_URL,
+        lastError: sbLastError,
+    });
+});
+
+app.get('/sb/actions', async (_req, res) => {
+    try {
+        connectStreamerBot();
+        const actions = await getStreamerBotActions();
+        res.json({ actions });
+    } catch (err) {
+        res.status(500).json({ message: err.message || err });
+    }
 });
 
 app.get('/obs/status', (_req, res) => {
@@ -478,5 +597,6 @@ app.listen(PORT, () => {
     console.log(`[agent] dashboard listening on :${PORT}`);
     loadRules();
     connectObs();
+    connectStreamerBot();
     startRelayListener();
 });

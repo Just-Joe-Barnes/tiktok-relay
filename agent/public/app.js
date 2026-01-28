@@ -61,6 +61,7 @@ const elements = {
     ruleScene: document.getElementById('ruleScene'),
     ruleSource: document.getElementById('ruleSource'),
     ruleFilter: document.getElementById('ruleFilter'),
+    ruleSbAction: document.getElementById('ruleSbAction'),
     saveRule: document.getElementById('saveRule'),
     rulesList: document.getElementById('rulesList'),
 };
@@ -366,6 +367,7 @@ const setObsStatus = (text) => {
 let obsScenes = [];
 let obsSceneItems = [];
 let obsFilters = [];
+let sbActions = [];
 
 const renderSceneOptions = () => {
     if (!elements.ruleScene) return;
@@ -398,6 +400,19 @@ const renderFilterOptions = () => {
         option.value = filter.filterName;
         option.textContent = filter.filterName;
         elements.ruleFilter.appendChild(option);
+    });
+};
+
+const renderSbActions = () => {
+    if (!elements.ruleSbAction) return;
+    elements.ruleSbAction.innerHTML = '';
+    sbActions.forEach((action) => {
+        const option = document.createElement('option');
+        option.value = action.id || action.name;
+        option.textContent = action.name || action.id;
+        option.dataset.actionId = action.id || '';
+        option.dataset.actionName = action.name || '';
+        elements.ruleSbAction.appendChild(option);
     });
 };
 
@@ -458,6 +473,28 @@ const fetchObsFilters = async (sourceName) => {
     }
 };
 
+const fetchSbStatus = async () => {
+    try {
+        const response = await fetch('/sb/status');
+        const data = await response.json();
+        const status = data.connected ? 'sb: connected' : 'sb: disconnected';
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - ${status}`);
+    } catch (err) {
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - sb status error`);
+    }
+};
+
+const fetchSbActions = async () => {
+    try {
+        const response = await fetch('/sb/actions');
+        const data = await response.json();
+        sbActions = data.actions || [];
+        renderSbActions();
+    } catch (err) {
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - sb actions error`);
+    }
+};
+
 const renderRulesList = (rules) => {
     if (!elements.rulesList) return;
     elements.rulesList.innerHTML = '';
@@ -466,7 +503,9 @@ const renderRulesList = (rules) => {
         li.className = 'rule-item';
         const text = document.createElement('span');
         const matchLabel = `${rule.match?.type} ${rule.match?.value}`;
-        const actionLabel = `${rule.action?.type}`;
+        const actionLabel = rule.action?.type === 'streamerbotAction'
+            ? `streamer.bot: ${rule.action?.actionName || rule.action?.actionId || 'action'}`
+            : `${rule.action?.type}`;
         text.textContent = `${matchLabel} -> ${actionLabel}`;
         const remove = document.createElement('button');
         remove.textContent = 'Delete';
@@ -499,6 +538,8 @@ fetchGiftList(false);
 fetchObsStatus();
 fetchObsScenes();
 fetchRules();
+fetchSbStatus();
+fetchSbActions();
 
 if (elements.refreshGifts) {
     elements.refreshGifts.addEventListener('click', () => {
@@ -555,6 +596,10 @@ if (elements.saveRule) {
             action.filterName = elements.ruleFilter?.value;
         } else if (actionType === 'playMedia') {
             action.sourceName = elements.ruleSource?.selectedOptions?.[0]?.dataset?.sourceName;
+        } else if (actionType === 'streamerbotAction') {
+            const option = elements.ruleSbAction?.selectedOptions?.[0];
+            action.actionId = option?.dataset?.actionId || null;
+            action.actionName = option?.dataset?.actionName || null;
         }
 
         const payload = { match, action, enabled: true };

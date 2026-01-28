@@ -58,3 +58,16 @@ Optional env vars:
 - `OBS_AUTO_CONNECT` (default `true`)
 
 Use the OBS Rules panel in the dashboard to pick a gift/command and an OBS action.
+
+## Streamer.bot Integration
+
+Streamer.bot can be used as the automation layer instead of direct OBS actions.
+Enable the WebSocket server in Streamer.bot (default `ws://127.0.0.1:8080/`).
+
+Optional env vars:
+- `STREAMERBOT_WS_URL` (default `ws://127.0.0.1:8080/`)
+- `STREAMERBOT_WS_PASSWORD` (optional)
+- `STREAMERBOT_AUTO_CONNECT` (default `true`)
+
+In the Rules panel, choose action type `Streamer.bot Action` and select one of
+your Streamer.bot actions. This will call `DoAction` over WebSocket.
