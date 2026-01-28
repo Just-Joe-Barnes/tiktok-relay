@@ -6,5 +6,6 @@ if not exist node_modules (
   echo Installing dependencies...
   npm install
 )
-start "JustJoe's TikTok Relay" http://localhost:5177
-npm start
+start "JustJoe's TikTok Relay" cmd /c "npm start"
+timeout /t 2 /nobreak >nul
+start "" http://localhost:5177
