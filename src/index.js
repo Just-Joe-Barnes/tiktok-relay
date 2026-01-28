@@ -37,6 +37,7 @@ const {
     LOG_CONTROL_EVENTS,
     LOG_RAW_DATA,
     LOG_DECODED_DATA,
+    HEALTH_LOG_INTERVAL_MS,
 } = process.env;
 
 const RECONNECT_DELAY_MS = parseInt(process.env.RECONNECT_DELAY_MS || '30000', 10);
@@ -105,6 +106,7 @@ const BUFFER_FLUSH_MS_VALUE = Math.max(250, parseInt(BUFFER_FLUSH_MS || '3000', 
 const BUFFER_MAX_EVENTS_VALUE = Math.max(10, parseInt(BUFFER_MAX_EVENTS || '200', 10));
 const POST_TIMEOUT_MS_VALUE = Math.max(1000, parseInt(POST_TIMEOUT_MS || '5000', 10));
 const MAX_RETRY_ATTEMPTS_VALUE = Math.max(0, parseInt(MAX_RETRY_ATTEMPTS || '3', 10));
+const HEALTH_LOG_INTERVAL_MS_VALUE = Math.max(0, parseInt(HEALTH_LOG_INTERVAL_MS || '60000', 10));
 
 const COMMAND_PREFIXES_LIST = parseList(COMMAND_PREFIXES, ['!']);
 const COMMAND_MAX_PER_MESSAGE_VALUE = Math.max(1, parseInt(COMMAND_MAX_PER_MESSAGE || '5', 10));
@@ -658,6 +660,11 @@ connectToTikTok();
 
 app.listen(PORT, () => {
     console.log(`[relay] health server listening on :${PORT}`);
+    if (HEALTH_LOG_INTERVAL_MS_VALUE > 0) {
+        setInterval(() => {
+            console.log('[relay] heartbeat: running');
+        }, HEALTH_LOG_INTERVAL_MS_VALUE);
+    }
 });
 
 const shutdown = async () => {

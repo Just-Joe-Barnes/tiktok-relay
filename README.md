@@ -33,6 +33,7 @@ Logging:
 - `LOG_CONTROL_EVENTS`: log connect/disconnect/stream end (default `true`)
 - `LOG_RAW_DATA`: log raw protobuf data (default `false`)
 - `LOG_DECODED_DATA`: log decoded protobuf data (default `false`)
+- `HEALTH_LOG_INTERVAL_MS`: heartbeat log interval (default `60000`, set `0` to disable)
 
 Commands:
 - `COMMAND_PREFIXES`: comma-separated command prefixes (default `!`)
