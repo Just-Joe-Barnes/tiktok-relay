@@ -71,3 +71,11 @@ Optional env vars:
 
 In the Rules panel, choose action type `Streamer.bot Action` and select one of
 your Streamer.bot actions. This will call `DoAction` over WebSocket.
+
+## Additional Triggers
+
+Rules now support:
+- `Share` (any share triggers)
+- `Like Total ≥` (fires when total likes reach your threshold)
+
+For Like Total, enter a number (e.g., 100) in the value field.

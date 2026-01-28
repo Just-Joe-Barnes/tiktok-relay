@@ -47,6 +47,10 @@ const ruleState = {
     rules: [],
 };
 
+const likeState = {
+    totalLikes: 0,
+    lastThresholdByRule: new Map(),
+};
 let sbSocket = null;
 let sbConnected = false;
 let sbLastError = null;
@@ -264,13 +268,27 @@ const applyRules = async (event) => {
     const eventType = normalizeText(event.eventType);
     const giftName = normalizeText(event.giftName);
     const command = normalizeText(event.command);
+    const totalLikeCount = Number(event.totalLikeCount || 0);
 
     for (const rule of rules) {
         const match = rule.match || {};
-        if (normalizeText(match.type) !== eventType) continue;
+        const matchType = normalizeText(match.type);
+        if (matchType !== eventType) continue;
         const expected = normalizeText(match.value);
         if (match.field === 'giftName' && expected && giftName !== expected) continue;
         if (match.field === 'command' && expected && command !== expected) continue;
+
+        if (matchType === 'like_total') {
+            const threshold = Number(match.value || 0);
+            if (!Number.isFinite(threshold) || threshold <= 0) continue;
+            if (totalLikeCount < threshold) continue;
+
+            const last = likeState.lastThresholdByRule.get(rule.id) || 0;
+            if (totalLikeCount < last + threshold) {
+                continue;
+            }
+            likeState.lastThresholdByRule.set(rule.id, totalLikeCount);
+        }
 
         try {
             if (rule.action?.type === 'streamerbotAction') {
@@ -542,6 +560,15 @@ const startRelayListener = () => {
     source.addEventListener('event', async (message) => {
         try {
             const event = JSON.parse(message.data);
+            if (normalizeText(event.eventType) === 'like') {
+                const count = Number(event.totalLikeCount || 0);
+                if (Number.isFinite(count) && count > likeState.totalLikes) {
+                    likeState.totalLikes = count;
+                } else {
+                    likeState.totalLikes += Number(event.likeCount || 1);
+                }
+                event.totalLikeCount = likeState.totalLikes;
+            }
             await applyRules(event);
         } catch (err) {
             console.warn('[agent] relay listener parse error:', err.message || err);

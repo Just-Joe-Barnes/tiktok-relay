@@ -623,14 +623,14 @@ if (elements.saveRule) {
         const useStreamerbot = Boolean(elements.ruleUseStreamerbot?.checked);
         const actionType = useStreamerbot ? 'streamerbotAction' : elements.ruleAction?.value;
 
-        if (!value) {
+        if (!value && type !== 'share') {
             appendItem(elements.log, `${new Date().toLocaleTimeString()} - rule missing value`);
             return;
         }
 
         const match = {
             type,
-            field: type === 'command' ? 'command' : 'giftName',
+            field: type === 'command' ? 'command' : type === 'gift' ? 'giftName' : null,
             value,
         };
 
