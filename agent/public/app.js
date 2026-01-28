@@ -110,20 +110,16 @@ const handleEvent = (event) => {
     appendItem(elements.log, formatLog(event));
 };
 
-const setupStream = async () => {
-    const response = await fetch('/config');
-    const config = await response.json();
-    const url = new URL(config.streamUrl);
-
-    if (config.streamSecret) {
-        url.searchParams.set('secret', config.streamSecret);
-    }
-
-    const source = new EventSource(url.toString());
+const setupStream = () => {
+    const source = new EventSource('/stream');
 
     source.addEventListener('hello', () => {
         setConnectionState('connected');
     });
+
+    source.onopen = () => {
+        setConnectionState('connected');
+    };
 
     source.addEventListener('snapshot', (event) => {
         try {
@@ -147,11 +143,9 @@ const setupStream = async () => {
 
     source.onerror = () => {
         setConnectionState('disconnected');
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - stream error or disconnected`);
     };
 };
 
 setConnectionState('connecting');
-setupStream().catch((err) => {
-    console.error('Failed to connect to stream', err);
-    setConnectionState('disconnected');
-});
+setupStream();
