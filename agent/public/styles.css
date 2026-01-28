@@ -183,6 +183,29 @@ body {
   grid-column: 1 / -1;
 }
 
+.rules-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.rules-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.rules-form input,
+.rules-form select {
+  border: 1px solid #2c3342;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #12151b;
+  color: #e7e9ee;
+}
+
 .list {
   list-style: none;
   padding: 0;
@@ -200,6 +223,13 @@ body {
   font-size: 13px;
   line-height: 1.4;
   color: #e2e6ef;
+}
+
+.rule-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 @media (max-width: 900px) {

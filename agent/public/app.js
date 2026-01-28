@@ -53,6 +53,16 @@ const elements = {
     uploadSound: document.getElementById('uploadSound'),
     uploadStatus: document.getElementById('uploadStatus'),
     audioState: document.getElementById('audioState'),
+    obsStatus: document.getElementById('obsStatus'),
+    refreshObs: document.getElementById('refreshObs'),
+    ruleType: document.getElementById('ruleType'),
+    ruleValue: document.getElementById('ruleValue'),
+    ruleAction: document.getElementById('ruleAction'),
+    ruleScene: document.getElementById('ruleScene'),
+    ruleSource: document.getElementById('ruleSource'),
+    ruleFilter: document.getElementById('ruleFilter'),
+    saveRule: document.getElementById('saveRule'),
+    rulesList: document.getElementById('rulesList'),
 };
 
 const setConnectionState = (value) => {
@@ -347,14 +357,212 @@ const fetchGiftList = async (refresh = false) => {
     }
 };
 
+const setObsStatus = (text) => {
+    if (elements.obsStatus) {
+        elements.obsStatus.textContent = text;
+    }
+};
+
+let obsScenes = [];
+let obsSceneItems = [];
+let obsFilters = [];
+
+const renderSceneOptions = () => {
+    if (!elements.ruleScene) return;
+    elements.ruleScene.innerHTML = '';
+    obsScenes.forEach((scene) => {
+        const option = document.createElement('option');
+        option.value = scene.sceneName;
+        option.textContent = scene.sceneName;
+        elements.ruleScene.appendChild(option);
+    });
+};
+
+const renderSourceOptions = () => {
+    if (!elements.ruleSource) return;
+    elements.ruleSource.innerHTML = '';
+    obsSceneItems.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = String(item.sceneItemId);
+        option.textContent = item.sourceName;
+        option.dataset.sourceName = item.sourceName;
+        elements.ruleSource.appendChild(option);
+    });
+};
+
+const renderFilterOptions = () => {
+    if (!elements.ruleFilter) return;
+    elements.ruleFilter.innerHTML = '';
+    obsFilters.forEach((filter) => {
+        const option = document.createElement('option');
+        option.value = filter.filterName;
+        option.textContent = filter.filterName;
+        elements.ruleFilter.appendChild(option);
+    });
+};
+
+const fetchObsStatus = async () => {
+    try {
+        const response = await fetch('/obs/status');
+        const data = await response.json();
+        setObsStatus(data.connected ? 'obs: connected' : 'obs: disconnected');
+        if (data.lastError) {
+            appendItem(elements.log, `${new Date().toLocaleTimeString()} - obs error: ${data.lastError}`);
+        }
+    } catch (err) {
+        setObsStatus('obs: error');
+    }
+};
+
+const fetchObsScenes = async () => {
+    try {
+        const response = await fetch('/obs/scenes');
+        const data = await response.json();
+        if (!data.scenes) throw new Error('No scenes');
+        obsScenes = data.scenes;
+        renderSceneOptions();
+        if (data.currentProgramSceneName && elements.ruleScene) {
+            elements.ruleScene.value = data.currentProgramSceneName;
+        }
+        await fetchObsSceneItems(elements.ruleScene?.value);
+    } catch (err) {
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - obs scenes error`);
+    }
+};
+
+const fetchObsSceneItems = async (sceneName) => {
+    if (!sceneName) return;
+    try {
+        const response = await fetch(`/obs/scene-items?scene=${encodeURIComponent(sceneName)}`);
+        const data = await response.json();
+        obsSceneItems = data.sceneItems || [];
+        renderSourceOptions();
+        const sourceName = elements.ruleSource?.selectedOptions?.[0]?.dataset?.sourceName;
+        if (sourceName) {
+            await fetchObsFilters(sourceName);
+        }
+    } catch (err) {
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - obs sources error`);
+    }
+};
+
+const fetchObsFilters = async (sourceName) => {
+    if (!sourceName) return;
+    try {
+        const response = await fetch(`/obs/filters?source=${encodeURIComponent(sourceName)}`);
+        const data = await response.json();
+        obsFilters = data.filters || [];
+        renderFilterOptions();
+    } catch (err) {
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - obs filters error`);
+    }
+};
+
+const renderRulesList = (rules) => {
+    if (!elements.rulesList) return;
+    elements.rulesList.innerHTML = '';
+    rules.forEach((rule) => {
+        const li = document.createElement('li');
+        li.className = 'rule-item';
+        const text = document.createElement('span');
+        const matchLabel = `${rule.match?.type} ${rule.match?.value}`;
+        const actionLabel = `${rule.action?.type}`;
+        text.textContent = `${matchLabel} -> ${actionLabel}`;
+        const remove = document.createElement('button');
+        remove.textContent = 'Delete';
+        remove.className = 'button button-ghost';
+        remove.addEventListener('click', async () => {
+            await fetch(`/rules/${rule.id}`, { method: 'DELETE' });
+            await fetchRules();
+        });
+        li.appendChild(text);
+        li.appendChild(remove);
+        elements.rulesList.appendChild(li);
+    });
+};
+
+const fetchRules = async () => {
+    try {
+        const response = await fetch('/rules');
+        const data = await response.json();
+        renderRulesList(data);
+    } catch (err) {
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - rules fetch failed`);
+    }
+};
+
 setConnectionState('connecting');
 loadSoundMap();
 setupControls();
 setupStream();
 fetchGiftList(false);
+fetchObsStatus();
+fetchObsScenes();
+fetchRules();
 
 if (elements.refreshGifts) {
     elements.refreshGifts.addEventListener('click', () => {
         fetchGiftList(true);
+    });
+}
+
+if (elements.refreshObs) {
+    elements.refreshObs.addEventListener('click', async () => {
+        await fetchObsStatus();
+        await fetchObsScenes();
+    });
+}
+
+if (elements.ruleScene) {
+    elements.ruleScene.addEventListener('change', async () => {
+        await fetchObsSceneItems(elements.ruleScene.value);
+    });
+}
+
+if (elements.ruleSource) {
+    elements.ruleSource.addEventListener('change', async () => {
+        const sourceName = elements.ruleSource.selectedOptions?.[0]?.dataset?.sourceName;
+        await fetchObsFilters(sourceName);
+    });
+}
+
+if (elements.saveRule) {
+    elements.saveRule.addEventListener('click', async () => {
+        const type = elements.ruleType?.value || 'gift';
+        const value = elements.ruleValue?.value?.trim();
+        const actionType = elements.ruleAction?.value;
+
+        if (!value) {
+            appendItem(elements.log, `${new Date().toLocaleTimeString()} - rule missing value`);
+            return;
+        }
+
+        const match = {
+            type,
+            field: type === 'command' ? 'command' : 'giftName',
+            value,
+        };
+
+        const action = { type: actionType };
+        if (actionType === 'switchScene') {
+            action.sceneName = elements.ruleScene?.value;
+        } else if (['toggleSource', 'showSource', 'hideSource'].includes(actionType)) {
+            action.sceneName = elements.ruleScene?.value;
+            action.sceneItemId = Number(elements.ruleSource?.value);
+            action.sourceName = elements.ruleSource?.selectedOptions?.[0]?.dataset?.sourceName;
+        } else if (actionType === 'toggleFilter') {
+            action.sourceName = elements.ruleSource?.selectedOptions?.[0]?.dataset?.sourceName;
+            action.filterName = elements.ruleFilter?.value;
+        } else if (actionType === 'playMedia') {
+            action.sourceName = elements.ruleSource?.selectedOptions?.[0]?.dataset?.sourceName;
+        }
+
+        const payload = { match, action, enabled: true };
+        await fetch('/rules', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        await fetchRules();
     });
 }

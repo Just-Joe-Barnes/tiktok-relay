@@ -4,6 +4,8 @@ const https = require('https');
 const path = require('path');
 const fs = require('fs');
 const Busboy = require('busboy');
+const EventSource = require('eventsource');
+const OBSWebSocket = require('obs-websocket-js').default;
 const { URL } = require('url');
 
 require('dotenv').config();
@@ -15,7 +17,13 @@ const STREAM_SECRET = process.env.STREAM_SECRET || '';
 const GIFT_LIST_URL = process.env.GIFT_LIST_URL || 'https://mcstreams.com/gifts';
 const GIFT_LIST_CACHE_MS = Math.max(60_000, parseInt(process.env.GIFT_LIST_CACHE_MS || '43200000', 10));
 const SOUNDS_DIR = path.join(__dirname, 'public', 'sounds');
+const DATA_DIR = path.join(__dirname, 'data');
+const RULES_FILE = path.join(DATA_DIR, 'obs-rules.json');
+const OBS_WS_URL = process.env.OBS_WS_URL || 'ws://localhost:4455';
+const OBS_WS_PASSWORD = process.env.OBS_WS_PASSWORD || '';
+const OBS_AUTO_CONNECT = process.env.OBS_AUTO_CONNECT !== 'false';
 
+app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const giftCache = {
@@ -26,12 +34,155 @@ const giftCache = {
     lastUpdateText: null,
 };
 
+const obs = new OBSWebSocket();
+let obsConnected = false;
+let obsLastError = null;
+let obsConnecting = false;
+
+const ruleState = {
+    rules: [],
+};
+
 app.get('/config', (_req, res) => {
     res.json({
         streamUrl: STREAM_URL,
         streamSecret: STREAM_SECRET,
     });
 });
+
+const normalizeText = (value) => String(value || '').trim().toLowerCase();
+
+const loadRules = () => {
+    try {
+        if (!fs.existsSync(DATA_DIR)) {
+            fs.mkdirSync(DATA_DIR, { recursive: true });
+        }
+        if (!fs.existsSync(RULES_FILE)) {
+            ruleState.rules = [];
+            return;
+        }
+        const raw = fs.readFileSync(RULES_FILE, 'utf8');
+        const parsed = JSON.parse(raw);
+        ruleState.rules = Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+        console.warn('[agent] failed to load rules:', err.message || err);
+        ruleState.rules = [];
+    }
+};
+
+const saveRules = () => {
+    try {
+        if (!fs.existsSync(DATA_DIR)) {
+            fs.mkdirSync(DATA_DIR, { recursive: true });
+        }
+        fs.writeFileSync(RULES_FILE, JSON.stringify(ruleState.rules, null, 2));
+    } catch (err) {
+        console.warn('[agent] failed to save rules:', err.message || err);
+    }
+};
+
+const connectObs = async () => {
+    if (!OBS_AUTO_CONNECT || obsConnected || obsConnecting) return;
+    obsConnecting = true;
+    try {
+        await obs.connect(OBS_WS_URL, OBS_WS_PASSWORD || undefined);
+        obsConnected = true;
+        obsLastError = null;
+        console.log('[agent] OBS connected');
+    } catch (err) {
+        obsLastError = err.message || String(err);
+        console.warn('[agent] OBS connect failed:', obsLastError);
+    } finally {
+        obsConnecting = false;
+    }
+};
+
+obs.on('ConnectionClosed', () => {
+    obsConnected = false;
+    console.warn('[agent] OBS disconnected');
+});
+
+const ensureObs = async () => {
+    if (!obsConnected) {
+        await connectObs();
+    }
+    if (!obsConnected) {
+        throw new Error('OBS not connected');
+    }
+};
+
+const toggleSceneItem = async ({ sceneName, sceneItemId, enabled }) => {
+    if (enabled === undefined) {
+        const current = await obs.call('GetSceneItemEnabled', { sceneName, sceneItemId });
+        enabled = !current.sceneItemEnabled;
+    }
+    await obs.call('SetSceneItemEnabled', { sceneName, sceneItemId, sceneItemEnabled: enabled });
+};
+
+const toggleFilter = async ({ sourceName, filterName, enabled }) => {
+    if (enabled === undefined) {
+        const current = await obs.call('GetSourceFilter', { sourceName, filterName });
+        enabled = !current.filterEnabled;
+    }
+    await obs.call('SetSourceFilterEnabled', { sourceName, filterName, filterEnabled: enabled });
+};
+
+const playMedia = async ({ sourceName }) => {
+    await obs.call('TriggerMediaInputAction', {
+        inputName: sourceName,
+        mediaAction: 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART',
+    });
+};
+
+const runObsAction = async (action) => {
+    await ensureObs();
+    switch (action.type) {
+        case 'switchScene':
+            await obs.call('SetCurrentProgramScene', { sceneName: action.sceneName });
+            break;
+        case 'showSource':
+            await toggleSceneItem({ sceneName: action.sceneName, sceneItemId: action.sceneItemId, enabled: true });
+            break;
+        case 'hideSource':
+            await toggleSceneItem({ sceneName: action.sceneName, sceneItemId: action.sceneItemId, enabled: false });
+            break;
+        case 'toggleSource':
+            await toggleSceneItem({ sceneName: action.sceneName, sceneItemId: action.sceneItemId });
+            break;
+        case 'toggleFilter':
+            await toggleFilter({ sourceName: action.sourceName, filterName: action.filterName });
+            break;
+        case 'playMedia':
+            await playMedia({ sourceName: action.sourceName });
+            break;
+        default:
+            throw new Error(`Unknown action: ${action.type}`);
+    }
+};
+
+const applyRules = async (event) => {
+    const rules = ruleState.rules.filter((rule) => rule.enabled !== false);
+    if (!rules.length) return;
+
+    const eventType = normalizeText(event.eventType);
+    const giftName = normalizeText(event.giftName);
+    const command = normalizeText(event.command);
+
+    for (const rule of rules) {
+        const match = rule.match || {};
+        if (normalizeText(match.type) !== eventType) continue;
+        const expected = normalizeText(match.value);
+        if (match.field === 'giftName' && expected && giftName !== expected) continue;
+        if (match.field === 'command' && expected && command !== expected) continue;
+
+        try {
+            await runObsAction(rule.action || {});
+            console.log(`[agent] rule fired: ${rule.name || rule.id}`);
+        } catch (err) {
+            console.warn('[agent] rule failed:', err.message || err);
+        }
+    }
+};
 
 const fetchUrl = (url) => new Promise((resolve, reject) => {
     const client = url.startsWith('https:') ? https : http;
@@ -158,6 +309,107 @@ app.post('/upload-sound', (req, res) => {
     req.pipe(busboy);
 });
 
+app.get('/obs/status', (_req, res) => {
+    res.json({
+        connected: obsConnected,
+        url: OBS_WS_URL,
+        lastError: obsLastError,
+    });
+});
+
+app.get('/obs/scenes', async (_req, res) => {
+    try {
+        await ensureObs();
+        const result = await obs.call('GetSceneList');
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ message: err.message || err });
+    }
+});
+
+app.get('/obs/scene-items', async (req, res) => {
+    try {
+        await ensureObs();
+        const sceneName = req.query.scene;
+        if (!sceneName) {
+            return res.status(400).json({ message: 'Missing scene parameter.' });
+        }
+        const result = await obs.call('GetSceneItemList', { sceneName });
+        return res.json(result);
+    } catch (err) {
+        return res.status(500).json({ message: err.message || err });
+    }
+});
+
+app.get('/obs/filters', async (req, res) => {
+    try {
+        await ensureObs();
+        const sourceName = req.query.source;
+        if (!sourceName) {
+            return res.status(400).json({ message: 'Missing source parameter.' });
+        }
+        const result = await obs.call('GetSourceFilterList', { sourceName });
+        return res.json(result);
+    } catch (err) {
+        return res.status(500).json({ message: err.message || err });
+    }
+});
+
+app.get('/rules', (_req, res) => {
+    res.json(ruleState.rules);
+});
+
+app.post('/rules', (req, res) => {
+    const payload = req.body || {};
+    if (!payload.match || !payload.action) {
+        return res.status(400).json({ message: 'Missing match or action.' });
+    }
+    const id = payload.id || `rule_${Date.now()}`;
+    const existingIndex = ruleState.rules.findIndex((rule) => rule.id === id);
+    const entry = { ...payload, id };
+    if (existingIndex >= 0) {
+        ruleState.rules[existingIndex] = entry;
+    } else {
+        ruleState.rules.push(entry);
+    }
+    saveRules();
+    return res.json(entry);
+});
+
+app.delete('/rules/:id', (req, res) => {
+    const { id } = req.params;
+    const before = ruleState.rules.length;
+    ruleState.rules = ruleState.rules.filter((rule) => rule.id !== id);
+    if (ruleState.rules.length !== before) {
+        saveRules();
+    }
+    res.json({ ok: true });
+});
+
+const startRelayListener = () => {
+    const streamUrl = buildStreamUrl();
+    const source = new EventSource(streamUrl.toString());
+
+    source.addEventListener('open', () => {
+        console.log('[agent] relay listener connected');
+    });
+
+    source.addEventListener('event', async (message) => {
+        try {
+            const event = JSON.parse(message.data);
+            await applyRules(event);
+        } catch (err) {
+            console.warn('[agent] relay listener parse error:', err.message || err);
+        }
+    });
+
+    source.addEventListener('error', () => {
+        console.warn('[agent] relay listener error, reconnecting in 5s');
+        source.close();
+        setTimeout(startRelayListener, 5000);
+    });
+};
+
 const buildStreamUrl = () => {
     const url = new URL(STREAM_URL);
     if ((!url.pathname || url.pathname === '/') && !url.pathname.endsWith('/stream')) {
@@ -224,4 +476,7 @@ app.get('/stream', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`[agent] dashboard listening on :${PORT}`);
+    loadRules();
+    connectObs();
+    startRelayListener();
 });

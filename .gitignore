@@ -1,6 +1,8 @@
 node_modules/
 logs/
 agent/public/sounds/
+agent/data/
+agent/agent-start.log
 .env
 .env.local
 .DS_Store

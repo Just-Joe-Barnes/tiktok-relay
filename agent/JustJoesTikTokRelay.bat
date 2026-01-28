@@ -19,6 +19,8 @@ if errorlevel 1 (
 
 if not exist "node_modules" call :install
 if not exist "node_modules\busboy" call :install
+if not exist "node_modules\obs-websocket-js" call :install
+if not exist "node_modules\eventsource" call :install
 
 start "" http://localhost:5177
 echo Starting agent...

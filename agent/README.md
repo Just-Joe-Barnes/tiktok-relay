@@ -46,3 +46,15 @@ This is not an official TikTok API, so the list can change or be incomplete.
 Use the dropdown to pick a gift name and the Upload Sound controls to attach
 a local audio file. The file is saved into `agent/public/sounds` and remembered
 in your browser (localStorage).
+
+## OBS Integration
+
+The agent can connect to OBS WebSocket and fire actions based on rules.
+Default settings assume OBS WebSocket is enabled on `ws://localhost:4455`.
+
+Optional env vars:
+- `OBS_WS_URL` (default `ws://localhost:4455`)
+- `OBS_WS_PASSWORD` (optional)
+- `OBS_AUTO_CONNECT` (default `true`)
+
+Use the OBS Rules panel in the dashboard to pick a gift/command and an OBS action.
