@@ -21,4 +21,6 @@ npm install
 npm start
 ```
 
+Or double-click `JustJoesTikTokRelay.bat` to launch on Windows.
+
 Open http://localhost:5177 in your browser.
