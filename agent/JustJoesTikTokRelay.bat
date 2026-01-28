@@ -25,6 +25,16 @@ if not exist node_modules (
   )
 )
 
+if not exist node_modules\\busboy (
+  echo Updating dependencies (busboy missing)...
+  npm install
+  if errorlevel 1 (
+    echo npm install failed.
+    pause
+    exit /b 1
+  )
+)
+
 start "" http://localhost:5177
 echo Starting agent...
 set LOG_FILE=%SCRIPT_DIR%agent-start.log
