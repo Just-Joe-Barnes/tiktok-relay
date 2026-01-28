@@ -54,6 +54,7 @@ const elements = {
     uploadStatus: document.getElementById('uploadStatus'),
     audioState: document.getElementById('audioState'),
     obsStatus: document.getElementById('obsStatus'),
+    sbStatus: document.getElementById('sbStatus'),
     refreshObs: document.getElementById('refreshObs'),
     ruleType: document.getElementById('ruleType'),
     ruleValue: document.getElementById('ruleValue'),
@@ -364,6 +365,12 @@ const setObsStatus = (text) => {
     }
 };
 
+const setSbStatus = (text) => {
+    if (elements.sbStatus) {
+        elements.sbStatus.textContent = text;
+    }
+};
+
 let obsScenes = [];
 let obsSceneItems = [];
 let obsFilters = [];
@@ -477,10 +484,12 @@ const fetchSbStatus = async () => {
     try {
         const response = await fetch('/sb/status');
         const data = await response.json();
-        const status = data.connected ? 'sb: connected' : 'sb: disconnected';
-        appendItem(elements.log, `${new Date().toLocaleTimeString()} - ${status}`);
+        setSbStatus(data.connected ? 'sb: connected' : 'sb: disconnected');
+        if (data.lastError) {
+            appendItem(elements.log, `${new Date().toLocaleTimeString()} - sb error: ${data.lastError}`);
+        }
     } catch (err) {
-        appendItem(elements.log, `${new Date().toLocaleTimeString()} - sb status error`);
+        setSbStatus('sb: error');
     }
 };
 
@@ -530,6 +539,20 @@ const fetchRules = async () => {
     }
 };
 
+const updateActionFields = () => {
+    const actionType = elements.ruleAction?.value;
+    const obsFields = [elements.ruleScene, elements.ruleSource, elements.ruleFilter];
+    const sbField = elements.ruleSbAction;
+
+    const showObs = actionType !== 'streamerbotAction';
+    obsFields.forEach((field) => {
+        if (field) field.style.display = showObs ? '' : 'none';
+    });
+    if (sbField) {
+        sbField.style.display = showObs ? 'none' : '';
+    }
+};
+
 setConnectionState('connecting');
 loadSoundMap();
 setupControls();
@@ -540,6 +563,7 @@ fetchObsScenes();
 fetchRules();
 fetchSbStatus();
 fetchSbActions();
+updateActionFields();
 
 if (elements.refreshGifts) {
     elements.refreshGifts.addEventListener('click', () => {
@@ -551,6 +575,8 @@ if (elements.refreshObs) {
     elements.refreshObs.addEventListener('click', async () => {
         await fetchObsStatus();
         await fetchObsScenes();
+        await fetchSbStatus();
+        await fetchSbActions();
     });
 }
 
@@ -564,6 +590,12 @@ if (elements.ruleSource) {
     elements.ruleSource.addEventListener('change', async () => {
         const sourceName = elements.ruleSource.selectedOptions?.[0]?.dataset?.sourceName;
         await fetchObsFilters(sourceName);
+    });
+}
+
+if (elements.ruleAction) {
+    elements.ruleAction.addEventListener('change', () => {
+        updateActionFields();
     });
 }
 
