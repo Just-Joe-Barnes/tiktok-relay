@@ -224,6 +224,18 @@ const buildTestEvent = (giftName = 'Heart Me', repeatCount = 1) => ({
     receivedAt: new Date().toISOString(),
 });
 
+const sendTestEvent = async (event) => {
+    try {
+        await fetch('/test-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(event),
+        });
+    } catch (err) {
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - test event failed`);
+    }
+};
+
 const setupControls = () => {
     const enableAudio = () => {
         if (!audioEnabled) {
@@ -250,7 +262,9 @@ const setupControls = () => {
             const giftName = elements.testGiftName?.value?.trim() || 'Gift';
             const countValue = Number(elements.testGiftCount?.value || 1);
             const repeatCount = Number.isFinite(countValue) && countValue > 0 ? countValue : 1;
-            handleEvent(buildTestEvent(giftName, repeatCount));
+            const event = buildTestEvent(giftName, repeatCount);
+            handleEvent(event);
+            void sendTestEvent(event);
         });
     }
 

@@ -523,6 +523,19 @@ app.delete('/rules/:id', (req, res) => {
     res.json({ ok: true });
 });
 
+app.post('/test-event', async (req, res) => {
+    const payload = req.body || {};
+    if (!payload.eventType) {
+        return res.status(400).json({ message: 'Missing eventType.' });
+    }
+    try {
+        await applyRules(payload);
+        return res.json({ ok: true });
+    } catch (err) {
+        return res.status(500).json({ message: err.message || err });
+    }
+});
+
 app.post('/rules/:id/test', async (req, res) => {
     const { id } = req.params;
     const rule = ruleState.rules.find((entry) => entry.id === id);
