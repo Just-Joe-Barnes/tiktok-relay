@@ -18,6 +18,10 @@ const giftSoundRules = [
         match: 'heart me',
         sound: '/sounds/heart-me.mp3',
     },
+    {
+        match: 'rose',
+        sound: '/sounds/rose.mp3',
+    },
 ];
 
 let audioEnabled = false;
@@ -85,7 +89,14 @@ const handleGiftSounds = (event) => {
     const rule = giftSoundRules.find((entry) => normalizeText(entry.match) === giftName);
     if (!rule) return;
 
-    void playSound(rule.sound);
+    const repeatCount = Number(event.repeatCount || 1);
+    const playCount = Math.max(1, Math.min(5, repeatCount));
+
+    for (let i = 0; i < playCount; i += 1) {
+        setTimeout(() => {
+            void playSound(rule.sound);
+        }, i * 300);
+    }
 };
 
 const formatGift = (event) => {

@@ -27,8 +27,11 @@ Open http://localhost:5177 in your browser.
 
 ## Gift Sounds
 
-Put sound files in `agent/public/sounds`. The default rule plays
-`/sounds/heart-me.mp3` whenever the gift name matches "Heart Me".
+Put sound files in `agent/public/sounds`. Default rules:
+- `Heart Me` -> `/sounds/heart-me.mp3`
+- `Rose` -> `/sounds/rose.mp3`
+
+If a gift event has a `repeatCount`, the sound plays up to 5 times (300ms apart).
 
 Use the "Enable Audio" button once to allow browser audio playback.
 
