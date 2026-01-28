@@ -1,8 +1,8 @@
 :root {
-  color-scheme: light;
+  color-scheme: dark;
   font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
-  background: #f5f4f1;
-  color: #1f1f1f;
+  background: #0d0f12;
+  color: #e7e9ee;
 }
 
 * {
@@ -12,7 +12,7 @@
 body {
   margin: 0;
   padding: 32px;
-  background: linear-gradient(135deg, #f7efe7 0%, #f5f4f1 50%, #eef3f6 100%);
+  background: radial-gradient(circle at top, #1b1f27 0%, #0f1116 55%, #0b0d11 100%);
 }
 
 .header {
@@ -20,10 +20,10 @@ body {
   justify-content: space-between;
   align-items: flex-start;
   gap: 24px;
-  background: #ffffff;
+  background: #171b22;
   border-radius: 16px;
   padding: 24px 28px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
   margin-bottom: 20px;
 }
 
@@ -34,7 +34,7 @@ body {
 
 .sub {
   margin: 0;
-  color: #5f5f5f;
+  color: #9aa3b2;
 }
 
 .status {
@@ -44,7 +44,7 @@ body {
 }
 
 .status-item {
-  background: #f6f1ea;
+  background: #1f242e;
   border-radius: 12px;
   padding: 10px 14px;
   min-width: 120px;
@@ -53,7 +53,7 @@ body {
 .status-item .label {
   display: block;
   font-size: 12px;
-  color: #7c7c7c;
+  color: #8a93a3;
   margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -64,11 +64,11 @@ body {
 }
 
 #connectionState[data-state="connected"] {
-  color: #1b8f4e;
+  color: #4ade80;
 }
 
 #connectionState[data-state="disconnected"] {
-  color: #c0392b;
+  color: #f87171;
 }
 
 .controls {
@@ -83,15 +83,15 @@ body {
   border: none;
   border-radius: 999px;
   padding: 10px 18px;
-  background: #1f1f1f;
-  color: #ffffff;
+  background: #2f3642;
+  color: #f5f7fa;
   font-weight: 600;
   cursor: pointer;
 }
 
 .button-ghost {
-  background: #f1e8dd;
-  color: #1f1f1f;
+  background: #1c212b;
+  color: #d7dde7;
 }
 
 .test-gift {
@@ -111,10 +111,11 @@ body {
 }
 
 .test-gift input {
-  border: 1px solid #e2d8cd;
+  border: 1px solid #2c3342;
   border-radius: 999px;
   padding: 8px 12px;
-  background: #ffffff;
+  background: #12151b;
+  color: #e7e9ee;
 }
 
 .test-gift input[type="number"] {
@@ -122,11 +123,11 @@ body {
 }
 
 .chip {
-  background: #f6f1ea;
+  background: #1f242e;
   border-radius: 999px;
   padding: 8px 12px;
   font-size: 12px;
-  color: #6b6b6b;
+  color: #9aa3b2;
 }
 
 .metrics {
@@ -137,17 +138,17 @@ body {
 }
 
 .metric {
-  background: #ffffff;
+  background: #171b22;
   border-radius: 12px;
   padding: 12px 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .metric .label {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #7b7b7b;
+  color: #8a93a3;
 }
 
 .metric .value {
@@ -164,10 +165,10 @@ body {
 }
 
 .panel {
-  background: #ffffff;
+  background: #171b22;
   border-radius: 16px;
   padding: 18px 20px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
   min-height: 260px;
   display: flex;
   flex-direction: column;
@@ -193,12 +194,12 @@ body {
 }
 
 .list li {
-  background: #f8f6f2;
+  background: #1f242e;
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 13px;
   line-height: 1.4;
-  color: #333;
+  color: #e2e6ef;
 }
 
 @media (max-width: 900px) {
