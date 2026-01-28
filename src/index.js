@@ -81,6 +81,12 @@ app.get('/stream', (req, res) => {
 
     const client = { id: randomUUID(), res };
     streamClients.add(client);
+    if (LOG_CONTROL_EVENTS_ENABLED) {
+        logSystem('stream_client_connected', {
+            clientId: client.id,
+            totalClients: streamClients.size,
+        });
+    }
 
     const helloPayload = safeJsonStringify({
         id: client.id,
@@ -95,6 +101,12 @@ app.get('/stream', (req, res) => {
 
     req.on('close', () => {
         streamClients.delete(client);
+        if (LOG_CONTROL_EVENTS_ENABLED) {
+            logSystem('stream_client_disconnected', {
+                clientId: client.id,
+                totalClients: streamClients.size,
+            });
+        }
     });
 });
 
