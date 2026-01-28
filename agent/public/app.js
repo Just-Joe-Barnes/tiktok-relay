@@ -58,6 +58,7 @@ const elements = {
     refreshObs: document.getElementById('refreshObs'),
     ruleType: document.getElementById('ruleType'),
     ruleValue: document.getElementById('ruleValue'),
+    ruleUseStreamerbot: document.getElementById('ruleUseStreamerbot'),
     ruleAction: document.getElementById('ruleAction'),
     ruleScene: document.getElementById('ruleScene'),
     ruleSource: document.getElementById('ruleSource'),
@@ -540,11 +541,11 @@ const fetchRules = async () => {
 };
 
 const updateActionFields = () => {
-    const actionType = elements.ruleAction?.value;
-    const obsFields = [elements.ruleScene, elements.ruleSource, elements.ruleFilter];
+    const useStreamerbot = Boolean(elements.ruleUseStreamerbot?.checked);
+    const obsFields = [elements.ruleAction, elements.ruleScene, elements.ruleSource, elements.ruleFilter];
     const sbField = elements.ruleSbAction;
 
-    const showObs = actionType !== 'streamerbotAction';
+    const showObs = !useStreamerbot;
     obsFields.forEach((field) => {
         if (field) field.style.display = showObs ? '' : 'none';
     });
@@ -599,11 +600,18 @@ if (elements.ruleAction) {
     });
 }
 
+if (elements.ruleUseStreamerbot) {
+    elements.ruleUseStreamerbot.addEventListener('change', () => {
+        updateActionFields();
+    });
+}
+
 if (elements.saveRule) {
     elements.saveRule.addEventListener('click', async () => {
         const type = elements.ruleType?.value || 'gift';
         const value = elements.ruleValue?.value?.trim();
-        const actionType = elements.ruleAction?.value;
+        const useStreamerbot = Boolean(elements.ruleUseStreamerbot?.checked);
+        const actionType = useStreamerbot ? 'streamerbotAction' : elements.ruleAction?.value;
 
         if (!value) {
             appendItem(elements.log, `${new Date().toLocaleTimeString()} - rule missing value`);
