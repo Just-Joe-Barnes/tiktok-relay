@@ -505,6 +505,32 @@ app.delete('/rules/:id', (req, res) => {
     res.json({ ok: true });
 });
 
+app.post('/rules/:id/test', async (req, res) => {
+    const { id } = req.params;
+    const rule = ruleState.rules.find((entry) => entry.id === id);
+    if (!rule) {
+        return res.status(404).json({ message: 'Rule not found.' });
+    }
+
+    const eventType = normalizeText(rule.match?.type || 'gift');
+    const value = rule.match?.value || '';
+    const event = {
+        id: `test-${id}`,
+        platform: 'tiktok',
+        eventType,
+        giftName: eventType === 'gift' ? value : undefined,
+        command: eventType === 'command' ? value : undefined,
+        receivedAt: new Date().toISOString(),
+    };
+
+    try {
+        await applyRules(event);
+        return res.json({ ok: true });
+    } catch (err) {
+        return res.status(500).json({ message: err.message || err });
+    }
+});
+
 const startRelayListener = () => {
     const streamUrl = buildStreamUrl();
     const source = new EventSource(streamUrl.toString());

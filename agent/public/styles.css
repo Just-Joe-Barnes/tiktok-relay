@@ -248,6 +248,11 @@ body {
   gap: 12px;
 }
 
+.rule-actions {
+  display: flex;
+  gap: 8px;
+}
+
 @media (max-width: 900px) {
   body {
     padding: 16px;

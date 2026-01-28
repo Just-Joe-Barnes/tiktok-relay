@@ -517,6 +517,14 @@ const renderRulesList = (rules) => {
             ? `streamer.bot: ${rule.action?.actionName || rule.action?.actionId || 'action'}`
             : `${rule.action?.type}`;
         text.textContent = `${matchLabel} -> ${actionLabel}`;
+        const actions = document.createElement('div');
+        actions.className = 'rule-actions';
+        const testBtn = document.createElement('button');
+        testBtn.textContent = 'Test';
+        testBtn.className = 'button button-ghost';
+        testBtn.addEventListener('click', async () => {
+            await fetch(`/rules/${rule.id}/test`, { method: 'POST' });
+        });
         const remove = document.createElement('button');
         remove.textContent = 'Delete';
         remove.className = 'button button-ghost';
@@ -525,7 +533,9 @@ const renderRulesList = (rules) => {
             await fetchRules();
         });
         li.appendChild(text);
-        li.appendChild(remove);
+        actions.appendChild(testBtn);
+        actions.appendChild(remove);
+        li.appendChild(actions);
         elements.rulesList.appendChild(li);
     });
 };
