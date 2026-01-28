@@ -26,6 +26,7 @@ const giftSoundRules = [
 
 let audioEnabled = false;
 let dynamicSoundMap = {};
+let giftCatalog = new Map();
 
 const elements = {
     connectionState: document.getElementById('connectionState'),
@@ -209,7 +210,17 @@ const handleEvent = (event) => {
     appendItem(elements.log, formatLog(event));
 };
 
-const buildTestEvent = (giftName = 'Heart Me', repeatCount = 1) => ({
+const resolveGiftCoins = (giftName) => {
+    const key = normalizeText(giftName);
+    if (!key) return 1;
+    const value = giftCatalog.get(key);
+    return Number.isFinite(value) && value > 0 ? value : 1;
+};
+
+const buildTestEvent = (giftName = 'Heart Me', repeatCount = 1) => {
+    const coinsPerGift = resolveGiftCoins(giftName);
+    const totalCoins = coinsPerGift * repeatCount;
+    return ({
     id: `test-${normalizeText(giftName) || 'gift'}`,
     platform: 'tiktok',
     eventType: 'gift',
@@ -217,12 +228,13 @@ const buildTestEvent = (giftName = 'Heart Me', repeatCount = 1) => ({
     username: 'test-user',
     giftName,
     giftId: normalizeText(giftName) || 'gift',
-    coins: 1,
+    coins: totalCoins,
     giftType: repeatCount > 1 ? 1 : 0,
     repeatCount,
     repeatEnd: true,
     receivedAt: new Date().toISOString(),
-});
+    });
+};
 
 const sendTestEvent = async (event) => {
     try {
@@ -348,11 +360,13 @@ const setupStream = () => {
 const renderGiftList = (gifts) => {
     if (!elements.giftList) return;
     elements.giftList.innerHTML = '';
+    giftCatalog = new Map();
     gifts.forEach((gift) => {
         const option = document.createElement('option');
         option.value = gift.name;
         option.label = `${gift.name} (${gift.coins})`;
         elements.giftList.appendChild(option);
+        giftCatalog.set(normalizeText(gift.name), Number(gift.coins));
     });
 };
 
