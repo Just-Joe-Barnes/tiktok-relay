@@ -41,6 +41,9 @@ const elements = {
     log: document.getElementById('log'),
     enableAudio: document.getElementById('enableAudio'),
     testHeart: document.getElementById('testHeart'),
+    testGiftName: document.getElementById('testGiftName'),
+    testGiftCount: document.getElementById('testGiftCount'),
+    testGift: document.getElementById('testGift'),
     audioState: document.getElementById('audioState'),
 };
 
@@ -160,15 +163,18 @@ const handleEvent = (event) => {
     appendItem(elements.log, formatLog(event));
 };
 
-const buildTestEvent = () => ({
-    id: 'test-heart-me',
+const buildTestEvent = (giftName = 'Heart Me', repeatCount = 1) => ({
+    id: `test-${normalizeText(giftName) || 'gift'}`,
     platform: 'tiktok',
     eventType: 'gift',
     userId: 'test-user',
     username: 'test-user',
-    giftName: 'Heart Me',
-    giftId: 'heart_me',
+    giftName,
+    giftId: normalizeText(giftName) || 'gift',
     coins: 1,
+    giftType: repeatCount > 1 ? 1 : 0,
+    repeatCount,
+    repeatEnd: true,
     receivedAt: new Date().toISOString(),
 });
 
@@ -190,6 +196,15 @@ const setupControls = () => {
     if (elements.testHeart) {
         elements.testHeart.addEventListener('click', () => {
             handleEvent(buildTestEvent());
+        });
+    }
+
+    if (elements.testGift) {
+        elements.testGift.addEventListener('click', () => {
+            const giftName = elements.testGiftName?.value?.trim() || 'Gift';
+            const countValue = Number(elements.testGiftCount?.value || 1);
+            const repeatCount = Number.isFinite(countValue) && countValue > 0 ? countValue : 1;
+            handleEvent(buildTestEvent(giftName, repeatCount));
         });
     }
 

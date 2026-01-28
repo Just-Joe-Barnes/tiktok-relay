@@ -76,6 +76,7 @@ body {
   align-items: center;
   gap: 12px;
   margin-bottom: 18px;
+  flex-wrap: wrap;
 }
 
 .button {
@@ -91,6 +92,23 @@ body {
 .button-ghost {
   background: #f1e8dd;
   color: #1f1f1f;
+}
+
+.test-gift {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.test-gift input {
+  border: 1px solid #e2d8cd;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #ffffff;
+}
+
+.test-gift input[type="number"] {
+  width: 80px;
 }
 
 .chip {

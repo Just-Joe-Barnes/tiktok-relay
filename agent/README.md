@@ -33,9 +33,7 @@ Put sound files in `agent/public/sounds`. Default rules:
 
 Gift streaks play once at the start (when `repeatCount` is 1).
 
-Use the "Enable Audio" button once to allow browser audio playback.
-
 ## Testing Without Going Live
 
-Click "Test Heart Me" on the dashboard to simulate a gift event and trigger audio.
+Use the "Test Gift" box to simulate any gift name + count.
 This verifies your local setup without needing a live TikTok stream.
