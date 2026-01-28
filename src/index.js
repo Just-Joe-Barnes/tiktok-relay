@@ -38,6 +38,13 @@ const {
     LOG_RAW_DATA,
     LOG_DECODED_DATA,
     HEALTH_LOG_INTERVAL_MS,
+    STREAM_ENABLED,
+    STREAM_SECRET,
+    STREAM_INCLUDE_RAW,
+    STREAM_EVENT_TYPES,
+    STREAM_BUFFER_MAX,
+    STREAM_HEARTBEAT_MS,
+    STREAM_CORS_ORIGIN,
 } = process.env;
 
 const RECONNECT_DELAY_MS = parseInt(process.env.RECONNECT_DELAY_MS || '30000', 10);
@@ -48,9 +55,47 @@ if (!TIKTOK_USERNAME || !API_BASE_URL || !RELAY_SECRET) {
 }
 
 const app = express();
+const streamClients = new Set();
+const streamBuffer = [];
 
 app.get('/health', (req, res) => {
     res.status(200).json({ ok: true });
+});
+
+app.get('/stream', (req, res) => {
+    if (!STREAM_ENABLED_VALUE) {
+        return res.status(404).json({ message: 'Stream disabled.' });
+    }
+
+    const secret = req.query.secret || req.headers['x-relay-secret'];
+    if (STREAM_SECRET_VALUE && secret !== STREAM_SECRET_VALUE) {
+        return res.status(401).json({ message: 'Unauthorized.' });
+    }
+
+    res.status(200);
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', STREAM_CORS_ORIGIN_VALUE);
+    res.flushHeaders?.();
+
+    const client = { id: randomUUID(), res };
+    streamClients.add(client);
+
+    const helloPayload = safeJsonStringify({
+        id: client.id,
+        connectedAt: new Date().toISOString(),
+        stream: 'tiktok-relay',
+    });
+    res.write(`event: hello\\ndata: ${helloPayload}\\n\\n`);
+
+    if (STREAM_BUFFER_MAX_VALUE > 0 && streamBuffer.length) {
+        res.write(`event: snapshot\\ndata: ${safeJsonStringify(streamBuffer)}\\n\\n`);
+    }
+
+    req.on('close', () => {
+        streamClients.delete(client);
+    });
 });
 
 const normalizeBaseUrl = (baseUrl) => baseUrl.replace(/\/+$/, '');
@@ -107,14 +152,21 @@ const BUFFER_MAX_EVENTS_VALUE = Math.max(10, parseInt(BUFFER_MAX_EVENTS || '200'
 const POST_TIMEOUT_MS_VALUE = Math.max(1000, parseInt(POST_TIMEOUT_MS || '5000', 10));
 const MAX_RETRY_ATTEMPTS_VALUE = Math.max(0, parseInt(MAX_RETRY_ATTEMPTS || '3', 10));
 const HEALTH_LOG_INTERVAL_MS_VALUE = Math.max(0, parseInt(HEALTH_LOG_INTERVAL_MS || '60000', 10));
+const STREAM_ENABLED_VALUE = parseBoolean(STREAM_ENABLED, true);
+const STREAM_INCLUDE_RAW_ENABLED = parseBoolean(STREAM_INCLUDE_RAW, false);
+const STREAM_BUFFER_MAX_VALUE = Math.max(0, parseInt(STREAM_BUFFER_MAX || '100', 10));
+const STREAM_HEARTBEAT_MS_VALUE = Math.max(0, parseInt(STREAM_HEARTBEAT_MS || '20000', 10));
+const STREAM_SECRET_VALUE = STREAM_SECRET || RELAY_SECRET;
+const STREAM_CORS_ORIGIN_VALUE = STREAM_CORS_ORIGIN || '*';
 
 const COMMAND_PREFIXES_LIST = parseList(COMMAND_PREFIXES, ['!']);
 const COMMAND_MAX_PER_MESSAGE_VALUE = Math.max(1, parseInt(COMMAND_MAX_PER_MESSAGE || '5', 10));
 
 const LOG_EVENT_FILTER = parseEventFilter(LOG_EVENT_TYPES, ['*']);
 const FORWARD_EVENT_FILTER = parseEventFilter(FORWARD_EVENT_TYPES, ['gift']);
+const STREAM_EVENT_FILTER = parseEventFilter(STREAM_EVENT_TYPES, ['*']);
 
-const INCLUDE_RAW = LOG_INCLUDE_RAW_ENABLED || POST_INCLUDE_RAW_ENABLED;
+const INCLUDE_RAW = LOG_INCLUDE_RAW_ENABLED || POST_INCLUDE_RAW_ENABLED || STREAM_INCLUDE_RAW_ENABLED;
 
 const shouldLogEvent = (eventType) => {
     if (!LOG_TO_FILE_ENABLED) return false;
@@ -159,6 +211,56 @@ const stripRawFields = (payload) => {
 const stripInternalFields = (payload) => {
     const { _attempts, _skipForward, ...rest } = payload;
     return rest;
+};
+
+const shouldStreamEvent = (eventType) => {
+    if (!STREAM_ENABLED_VALUE) return false;
+    if (!STREAM_EVENT_FILTER) return true;
+    return STREAM_EVENT_FILTER.has(String(eventType || '').toLowerCase());
+};
+
+const buildStreamPayload = (payload) => {
+    const sanitized = stripInternalFields(payload);
+    return STREAM_INCLUDE_RAW_ENABLED ? sanitized : stripRawFields(sanitized);
+};
+
+const pushStreamBuffer = (payload) => {
+    if (STREAM_BUFFER_MAX_VALUE <= 0) return;
+    streamBuffer.push(payload);
+    if (streamBuffer.length > STREAM_BUFFER_MAX_VALUE) {
+        streamBuffer.splice(0, streamBuffer.length - STREAM_BUFFER_MAX_VALUE);
+    }
+};
+
+const broadcastEvent = (payload) => {
+    if (!shouldStreamEvent(payload.eventType)) return;
+
+    const data = buildStreamPayload(payload);
+    pushStreamBuffer(data);
+    if (!STREAM_ENABLED_VALUE || streamClients.size === 0) return;
+    const message = `event: event\\ndata: ${safeJsonStringify(data)}\\n\\n`;
+
+    streamClients.forEach((client) => {
+        try {
+            client.res.write(message);
+        } catch (err) {
+            streamClients.delete(client);
+        }
+    });
+};
+
+const startStreamHeartbeat = () => {
+    if (!STREAM_ENABLED_VALUE || STREAM_HEARTBEAT_MS_VALUE <= 0) return;
+    setInterval(() => {
+        if (streamClients.size === 0) return;
+        streamClients.forEach((client) => {
+            try {
+                client.res.write(': ping\\n\\n');
+            } catch (err) {
+                streamClients.delete(client);
+            }
+        });
+    }, STREAM_HEARTBEAT_MS_VALUE);
 };
 
 const logEvent = (payload) => {
@@ -422,6 +524,8 @@ const enqueueEvent = (payload) => {
         logEvent(payload);
     }
 
+    broadcastEvent(payload);
+
     if (payload._skipForward || !shouldForwardEvent(payload.eventType)) {
         return;
     }
@@ -665,6 +769,7 @@ app.listen(PORT, () => {
             console.log('[relay] heartbeat: running');
         }, HEALTH_LOG_INTERVAL_MS_VALUE);
     }
+    startStreamHeartbeat();
 });
 
 const shutdown = async () => {

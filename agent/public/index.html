@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TikTok Relay Agent</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div>
+      <h1>TikTok Relay Agent</h1>
+      <p class="sub">Live stream of gifts, chat, and events from the relay.</p>
+    </div>
+    <div class="status">
+      <div class="status-item">
+        <span class="label">Connection</span>
+        <span id="connectionState" class="value">disconnected</span>
+      </div>
+      <div class="status-item">
+        <span class="label">Last Event</span>
+        <span id="lastEvent" class="value">--</span>
+      </div>
+      <div class="status-item">
+        <span class="label">Total</span>
+        <span id="totalEvents" class="value">0</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="metrics">
+    <div class="metric">
+      <span class="label">Gifts</span>
+      <span id="giftCount" class="value">0</span>
+    </div>
+    <div class="metric">
+      <span class="label">Chat</span>
+      <span id="chatCount" class="value">0</span>
+    </div>
+    <div class="metric">
+      <span class="label">Likes</span>
+      <span id="likeCount" class="value">0</span>
+    </div>
+    <div class="metric">
+      <span class="label">Follows</span>
+      <span id="followCount" class="value">0</span>
+    </div>
+    <div class="metric">
+      <span class="label">Commands</span>
+      <span id="commandCount" class="value">0</span>
+    </div>
+  </section>
+
+  <main class="grid">
+    <section class="panel">
+      <h2>Gifts</h2>
+      <ul id="gifts" class="list"></ul>
+    </section>
+
+    <section class="panel">
+      <h2>Chat</h2>
+      <ul id="chat" class="list"></ul>
+    </section>
+
+    <section class="panel">
+      <h2>Other Events</h2>
+      <ul id="events" class="list"></ul>
+    </section>
+
+    <section class="panel wide">
+      <h2>Log</h2>
+      <ul id="log" class="list"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

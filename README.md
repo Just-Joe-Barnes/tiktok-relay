@@ -35,6 +35,15 @@ Logging:
 - `LOG_DECODED_DATA`: log decoded protobuf data (default `false`)
 - `HEALTH_LOG_INTERVAL_MS`: heartbeat log interval (default `60000`, set `0` to disable)
 
+Stream (SSE):
+- `STREAM_ENABLED`: enable the event stream endpoint (default `true`)
+- `STREAM_SECRET`: optional secret for `/stream` (defaults to `RELAY_SECRET`)
+- `STREAM_INCLUDE_RAW`: include raw payloads in stream (default `false`)
+- `STREAM_EVENT_TYPES`: comma-separated types to stream, or `*` for all (default `*`)
+- `STREAM_BUFFER_MAX`: max in-memory events sent on connect (default `100`)
+- `STREAM_HEARTBEAT_MS`: heartbeat interval to keep connections alive (default `20000`)
+- `STREAM_CORS_ORIGIN`: CORS origin for `/stream` (default `*`)
+
 Commands:
 - `COMMAND_PREFIXES`: comma-separated command prefixes (default `!`)
 - `COMMAND_MAX_PER_MESSAGE`: max commands extracted per chat message (default `5`)
@@ -63,6 +72,16 @@ Notes:
 - Gift streaks are logged as `gift_streak` and do not forward unless you include that type.
 - Chat commands like `!fart` produce `command` events if enabled.
 - The current Ned's Decks backend only processes `gift` events; forward additional types when the backend is ready.
+
+## Stream Endpoint
+
+`GET /stream?secret=YOUR_SECRET` provides a Server-Sent Events (SSE) stream of relay events.
+This is used by the local agent UI. If `STREAM_SECRET` is not set, it uses `RELAY_SECRET`.
+
+## Local Agent
+
+There is a simple local dashboard in `agent/` that connects to the relay stream and shows gifts/chat/logs.
+See `agent/README.md` for setup.
 
 ## Render
 
