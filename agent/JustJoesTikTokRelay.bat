@@ -9,6 +9,12 @@ where node >nul 2>nul || (
   exit /b 1
 )
 
+where npm >nul 2>nul || (
+  echo npm not found. Reinstall Node.js and retry.
+  pause
+  exit /b 1
+)
+
 if not exist node_modules (
   echo Installing dependencies...
   npm install
@@ -20,5 +26,11 @@ if not exist node_modules (
 )
 
 start "" http://localhost:5177
-npm start
+echo Starting agent...
+set LOG_FILE=%SCRIPT_DIR%agent-start.log
+echo ===== %DATE% %TIME% ===== > "%LOG_FILE%"
+npm start >> "%LOG_FILE%" 2>&1
+echo Agent exited with code %errorlevel%.
+echo --- Agent log ---
+type "%LOG_FILE%"
 pause
