@@ -163,12 +163,19 @@ const buildTestEvent = () => ({
 });
 
 const setupControls = () => {
-    if (elements.enableAudio) {
-        elements.enableAudio.addEventListener('click', () => {
+    const enableAudio = () => {
+        if (!audioEnabled) {
             setAudioState(true);
             void playSound('/sounds/heart-me.mp3');
-        });
+        }
+    };
+
+    if (elements.enableAudio) {
+        elements.enableAudio.addEventListener('click', enableAudio);
     }
+
+    document.addEventListener('click', enableAudio, { once: true });
+    document.addEventListener('keydown', enableAudio, { once: true });
 
     if (elements.testHeart) {
         elements.testHeart.addEventListener('click', () => {
