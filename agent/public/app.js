@@ -13,6 +13,15 @@ const state = {
     },
 };
 
+const giftSoundRules = [
+    {
+        match: 'heart me',
+        sound: '/sounds/heart-me.mp3',
+    },
+];
+
+let audioEnabled = false;
+
 const elements = {
     connectionState: document.getElementById('connectionState'),
     lastEvent: document.getElementById('lastEvent'),
@@ -26,12 +35,22 @@ const elements = {
     chat: document.getElementById('chat'),
     events: document.getElementById('events'),
     log: document.getElementById('log'),
+    enableAudio: document.getElementById('enableAudio'),
+    testHeart: document.getElementById('testHeart'),
+    audioState: document.getElementById('audioState'),
 };
 
 const setConnectionState = (value) => {
     elements.connectionState.textContent = value;
     elements.connectionState.dataset.state = value;
 };
+
+const setAudioState = (enabled) => {
+    audioEnabled = enabled;
+    elements.audioState.textContent = `audio: ${enabled ? 'on' : 'off'}`;
+};
+
+const normalizeText = (value) => String(value || '').trim().toLowerCase();
 
 const formatTime = (iso) => {
     if (!iso) return '--';
@@ -47,6 +66,26 @@ const appendItem = (list, text) => {
     if (list.children.length > MAX_ITEMS) {
         list.removeChild(list.lastChild);
     }
+};
+
+const playSound = async (soundUrl) => {
+    if (!audioEnabled) return;
+    try {
+        const audio = new Audio(soundUrl);
+        await audio.play();
+    } catch (err) {
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - audio error: ${err.message || err}`);
+    }
+};
+
+const handleGiftSounds = (event) => {
+    const giftName = normalizeText(event.giftName);
+    if (!giftName) return;
+
+    const rule = giftSoundRules.find((entry) => normalizeText(entry.match) === giftName);
+    if (!rule) return;
+
+    void playSound(rule.sound);
 };
 
 const formatGift = (event) => {
@@ -96,6 +135,7 @@ const handleEvent = (event) => {
 
     if (event.eventType === 'gift' || event.eventType === 'gift_streak') {
         appendItem(elements.gifts, formatGift(event));
+        handleGiftSounds(event);
     } else if (event.eventType === 'chat') {
         appendItem(elements.chat, formatChat(event));
     } else if (event.eventType === 'command') {
@@ -108,6 +148,35 @@ const handleEvent = (event) => {
     }
 
     appendItem(elements.log, formatLog(event));
+};
+
+const buildTestEvent = () => ({
+    id: 'test-heart-me',
+    platform: 'tiktok',
+    eventType: 'gift',
+    userId: 'test-user',
+    username: 'test-user',
+    giftName: 'Heart Me',
+    giftId: 'heart_me',
+    coins: 1,
+    receivedAt: new Date().toISOString(),
+});
+
+const setupControls = () => {
+    if (elements.enableAudio) {
+        elements.enableAudio.addEventListener('click', () => {
+            setAudioState(true);
+            void playSound('/sounds/heart-me.mp3');
+        });
+    }
+
+    if (elements.testHeart) {
+        elements.testHeart.addEventListener('click', () => {
+            handleEvent(buildTestEvent());
+        });
+    }
+
+    setAudioState(false);
 };
 
 const setupStream = () => {
@@ -148,4 +217,5 @@ const setupStream = () => {
 };
 
 setConnectionState('connecting');
+setupControls();
 setupStream();

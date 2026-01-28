@@ -24,3 +24,15 @@ npm start
 Or double-click `JustJoesTikTokRelay.bat` to launch on Windows.
 
 Open http://localhost:5177 in your browser.
+
+## Gift Sounds
+
+Put sound files in `agent/public/sounds`. The default rule plays
+`/sounds/heart-me.mp3` whenever the gift name matches "Heart Me".
+
+Use the "Enable Audio" button once to allow browser audio playback.
+
+## Testing Without Going Live
+
+Click "Test Heart Me" on the dashboard to simulate a gift event and trigger audio.
+This verifies your local setup without needing a live TikTok stream.
