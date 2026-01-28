@@ -37,3 +37,12 @@ Gift streaks play once at the start (when `repeatCount` is 1).
 
 Use the "Test Gift" box to simulate any gift name + count.
 This verifies your local setup without needing a live TikTok stream.
+
+## Gift List + Uploads
+
+The agent fetches a gift list from a public catalog (currently mcstreams.com).
+This is not an official TikTok API, so the list can change or be incomplete.
+
+Use the dropdown to pick a gift name and the Upload Sound controls to attach
+a local audio file. The file is saved into `agent/public/sounds` and remembered
+in your browser (localStorage).

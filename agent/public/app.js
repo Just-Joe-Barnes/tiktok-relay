@@ -25,6 +25,7 @@ const giftSoundRules = [
 ];
 
 let audioEnabled = false;
+let dynamicSoundMap = {};
 
 const elements = {
     connectionState: document.getElementById('connectionState'),
@@ -44,6 +45,13 @@ const elements = {
     testGiftName: document.getElementById('testGiftName'),
     testGiftCount: document.getElementById('testGiftCount'),
     testGift: document.getElementById('testGift'),
+    refreshGifts: document.getElementById('refreshGifts'),
+    giftList: document.getElementById('giftList'),
+    giftListStatus: document.getElementById('giftListStatus'),
+    soundGiftName: document.getElementById('soundGiftName'),
+    soundFile: document.getElementById('soundFile'),
+    uploadSound: document.getElementById('uploadSound'),
+    uploadStatus: document.getElementById('uploadStatus'),
     audioState: document.getElementById('audioState'),
 };
 
@@ -85,12 +93,37 @@ const playSound = async (soundUrl) => {
     }
 };
 
+const loadSoundMap = () => {
+    try {
+        const stored = localStorage.getItem('giftSoundMap');
+        dynamicSoundMap = stored ? JSON.parse(stored) : {};
+    } catch (err) {
+        dynamicSoundMap = {};
+    }
+};
+
+const saveSoundMap = () => {
+    try {
+        localStorage.setItem('giftSoundMap', JSON.stringify(dynamicSoundMap));
+    } catch (err) {
+        // ignore storage errors
+    }
+};
+
+const resolveSoundForGift = (giftName) => {
+    const normalized = normalizeText(giftName);
+    if (!normalized) return null;
+    if (dynamicSoundMap[normalized]) return dynamicSoundMap[normalized];
+    const rule = giftSoundRules.find((entry) => normalizeText(entry.match) === normalized);
+    return rule ? rule.sound : null;
+};
+
 const handleGiftSounds = (event) => {
     const giftName = normalizeText(event.giftName);
     if (!giftName) return;
 
-    const rule = giftSoundRules.find((entry) => normalizeText(entry.match) === giftName);
-    if (!rule) return;
+    const soundUrl = resolveSoundForGift(giftName);
+    if (!soundUrl) return;
 
     if (event.giftType === 1 && !event.repeatEnd) {
         if (Number(event.repeatCount || 1) !== 1) {
@@ -98,7 +131,7 @@ const handleGiftSounds = (event) => {
         }
     }
 
-    void playSound(rule.sound);
+    void playSound(soundUrl);
 };
 
 const formatGift = (event) => {
@@ -208,6 +241,43 @@ const setupControls = () => {
         });
     }
 
+    if (elements.uploadSound) {
+        elements.uploadSound.addEventListener('click', async () => {
+            const giftName = elements.soundGiftName?.value?.trim();
+            const file = elements.soundFile?.files?.[0];
+
+            if (!giftName) {
+                elements.uploadStatus.textContent = 'upload: missing gift name';
+                return;
+            }
+            if (!file) {
+                elements.uploadStatus.textContent = 'upload: choose a file';
+                return;
+            }
+
+            elements.uploadStatus.textContent = 'upload: uploading...';
+            const formData = new FormData();
+            formData.append('sound', file);
+
+            try {
+                const response = await fetch('/upload-sound', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const result = await response.json();
+                if (!result.ok) {
+                    throw new Error(result.message || 'Upload failed');
+                }
+
+                dynamicSoundMap[normalizeText(giftName)] = result.url;
+                saveSoundMap();
+                elements.uploadStatus.textContent = `upload: saved ${result.fileName}`;
+            } catch (err) {
+                elements.uploadStatus.textContent = `upload: ${err.message || err}`;
+            }
+        });
+    }
+
     setAudioState(false);
 };
 
@@ -248,6 +318,43 @@ const setupStream = () => {
     };
 };
 
+const renderGiftList = (gifts) => {
+    if (!elements.giftList) return;
+    elements.giftList.innerHTML = '';
+    gifts.forEach((gift) => {
+        const option = document.createElement('option');
+        option.value = gift.name;
+        option.label = `${gift.name} (${gift.coins})`;
+        elements.giftList.appendChild(option);
+    });
+};
+
+const fetchGiftList = async (refresh = false) => {
+    try {
+        const url = refresh ? '/gifts?refresh=1' : '/gifts';
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.error) {
+            elements.giftListStatus.textContent = `gifts: error`;
+            appendItem(elements.log, `${new Date().toLocaleTimeString()} - gift list error: ${data.error}`);
+            return;
+        }
+        renderGiftList(data.gifts || []);
+        elements.giftListStatus.textContent = `gifts: ${data.gifts?.length || 0}`;
+    } catch (err) {
+        elements.giftListStatus.textContent = 'gifts: fetch failed';
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - gift list fetch failed`);
+    }
+};
+
 setConnectionState('connecting');
+loadSoundMap();
 setupControls();
 setupStream();
+fetchGiftList(false);
+
+if (elements.refreshGifts) {
+    elements.refreshGifts.addEventListener('click', () => {
+        fetchGiftList(true);
+    });
+}

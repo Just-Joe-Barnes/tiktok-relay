@@ -32,11 +32,23 @@
     <button id="enableAudio" class="button">Enable Audio</button>
     <button id="testHeart" class="button button-ghost">Test Heart Me</button>
     <div class="test-gift">
-      <input id="testGiftName" type="text" placeholder="Gift name (e.g. Rose)" />
+      <input id="testGiftName" type="text" list="giftList" placeholder="Gift name (e.g. Rose)" />
+      <datalist id="giftList"></datalist>
       <input id="testGiftCount" type="number" min="1" value="1" />
       <button id="testGift" class="button button-ghost">Test Gift</button>
     </div>
+    <button id="refreshGifts" class="button button-ghost">Refresh Gifts</button>
+    <span id="giftListStatus" class="chip">gifts: --</span>
     <span id="audioState" class="chip">audio: off</span>
+  </section>
+
+  <section class="controls">
+    <div class="upload-sound">
+      <input id="soundGiftName" type="text" list="giftList" placeholder="Gift name for sound" />
+      <input id="soundFile" type="file" accept="audio/*" />
+      <button id="uploadSound" class="button button-ghost">Upload Sound</button>
+      <span id="uploadStatus" class="chip">upload: idle</span>
+    </div>
   </section>
 
   <section class="metrics">
