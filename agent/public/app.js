@@ -89,14 +89,11 @@ const handleGiftSounds = (event) => {
     const rule = giftSoundRules.find((entry) => normalizeText(entry.match) === giftName);
     if (!rule) return;
 
-    const repeatCount = Number(event.repeatCount || 1);
-    const playCount = Math.max(1, Math.min(5, repeatCount));
-
-    for (let i = 0; i < playCount; i += 1) {
-        setTimeout(() => {
-            void playSound(rule.sound);
-        }, i * 300);
+    if (event.giftType === 1 && !event.repeatEnd) {
+        return;
     }
+
+    void playSound(rule.sound);
 };
 
 const formatGift = (event) => {

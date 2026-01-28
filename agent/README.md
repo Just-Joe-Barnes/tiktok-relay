@@ -31,7 +31,7 @@ Put sound files in `agent/public/sounds`. Default rules:
 - `Heart Me` -> `/sounds/heart-me.mp3`
 - `Rose` -> `/sounds/rose.mp3`
 
-If a gift event has a `repeatCount`, the sound plays up to 5 times (300ms apart).
+Gift streaks play once at the end (when `repeatEnd` is true).
 
 Use the "Enable Audio" button once to allow browser audio playback.
 
