@@ -596,6 +596,17 @@ const connectToTikTok = (forceUseUniqueId) => {
         ? false
         : parseBoolean(TIKTOK_FETCH_ROOMINFO, true);
 
+    console.log('[relay] startup config:', {
+        username: TIKTOK_USERNAME || '(missing)',
+        connectWithUniqueId: useUniqueId,
+        allowFallback,
+        fetchRoomInfoOnConnect,
+        forceConnect: parseBoolean(TIKTOK_FORCE_CONNECT, false),
+        hasSessionId: Boolean(TIKTOK_SESSION_ID),
+        hasTtTargetIdc: Boolean(TIKTOK_TT_TARGET_IDC),
+        hasSignApiKey: Boolean(TIKTOK_SIGN_API_KEY),
+    });
+
     if (TIKTOK_SIGN_API_KEY) {
         SignConfig.apiKey = TIKTOK_SIGN_API_KEY;
     }
