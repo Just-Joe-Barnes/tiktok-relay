@@ -587,6 +587,12 @@ const flushEvents = async () => {
 let fallbackAttempted = false;
 const userLikeCounts = new Map();
 
+const errorLogState = {
+    lastMessage: null,
+    lastLoggedAt: 0,
+    suppressedCount: 0,
+};
+
 const connectToTikTok = (forceUseUniqueId) => {
     const useUniqueId = typeof forceUseUniqueId === 'boolean'
         ? forceUseUniqueId
@@ -646,7 +652,21 @@ const connectToTikTok = (forceUseUniqueId) => {
             })
             .catch(err => {
                 const message = err?.message || String(err);
-                console.error('[relay] failed to connect:', message);
+                const now = Date.now();
+                const isSame = errorLogState.lastMessage === message;
+                const tooSoon = (now - errorLogState.lastLoggedAt) < 30000;
+
+                if (isSame && tooSoon) {
+                    errorLogState.suppressedCount += 1;
+                } else {
+                    if (errorLogState.suppressedCount > 0) {
+                        console.warn([relay] suppressed  repeated connect errors.);
+                        errorLogState.suppressedCount = 0;
+                    }
+                    console.error('[relay] failed to connect:', message);
+                    errorLogState.lastLoggedAt = now;
+                    errorLogState.lastMessage = message;
+                }
 
                 const offlineMatch = /offline|not online|room.*not.*found/i.test(message);
                 if (allowFallback && offlineMatch && !fallbackAttempted && typeof forceUseUniqueId !== 'boolean') {
