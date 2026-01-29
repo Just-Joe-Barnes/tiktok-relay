@@ -660,7 +660,7 @@ const connectToTikTok = (forceUseUniqueId) => {
                     errorLogState.suppressedCount += 1;
                 } else {
                     if (errorLogState.suppressedCount > 0) {
-                        console.warn([relay] suppressed  repeated connect errors.);
+                        console.warn(`[relay] suppressed ${errorLogState.suppressedCount} repeated connect errors.`);
                         errorLogState.suppressedCount = 0;
                     }
                     console.error('[relay] failed to connect:', message);
