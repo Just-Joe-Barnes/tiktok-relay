@@ -26,6 +26,7 @@ const OBS_AUTO_CONNECT = process.env.OBS_AUTO_CONNECT !== 'false';
 const STREAMERBOT_WS_URL = process.env.STREAMERBOT_WS_URL || 'ws://127.0.0.1:8080/';
 const STREAMERBOT_WS_PASSWORD = process.env.STREAMERBOT_WS_PASSWORD || '';
 const STREAMERBOT_AUTO_CONNECT = process.env.STREAMERBOT_AUTO_CONNECT !== 'false';
+const HEALTHCHECK_URL = process.env.HEALTHCHECK_URL || '';
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -56,6 +57,9 @@ let sbConnected = false;
 let sbLastError = null;
 let sbRequestId = 1;
 const sbPending = new Map();
+
+let relayConnected = false;
+let lastRelayEventAt = null;
 
 app.get('/config', (_req, res) => {
     res.json({
@@ -446,6 +450,42 @@ app.get('/sb/actions', async (_req, res) => {
     }
 });
 
+const checkBackendHealth = async () => {
+    if (!HEALTHCHECK_URL) return { ok: null, status: null };
+    const url = HEALTHCHECK_URL;
+    const client = url.startsWith('https:') ? https : http;
+    return new Promise((resolve) => {
+        const req = client.get(url, (response) => {
+            response.resume();
+            resolve({ ok: response.statusCode >= 200 && response.statusCode < 500, status: response.statusCode });
+        });
+        req.on('error', () => resolve({ ok: false, status: null }));
+        req.setTimeout(4000, () => {
+            req.destroy();
+            resolve({ ok: false, status: null });
+        });
+    });
+};
+
+app.get('/status', async (_req, res) => {
+    const backend = await checkBackendHealth();
+    res.json({
+        relay: {
+            connected: relayConnected,
+            lastEventAt: lastRelayEventAt,
+        },
+        streamerbot: {
+            connected: sbConnected,
+            lastError: sbLastError,
+        },
+        obs: {
+            connected: obsConnected,
+            lastError: obsLastError,
+        },
+        backend,
+    });
+});
+
 app.get('/obs/status', (_req, res) => {
     res.json({
         connected: obsConnected,
@@ -567,6 +607,7 @@ const startRelayListener = () => {
     const source = new EventSource(streamUrl.toString());
 
     source.addEventListener('open', () => {
+        relayConnected = true;
         console.log('[agent] relay listener connected');
     });
 
@@ -582,6 +623,7 @@ const startRelayListener = () => {
                 }
                 event.totalLikeCount = likeState.totalLikes;
             }
+            lastRelayEventAt = new Date().toISOString();
             await applyRules(event);
         } catch (err) {
             console.warn('[agent] relay listener parse error:', err.message || err);
@@ -589,6 +631,7 @@ const startRelayListener = () => {
     });
 
     source.addEventListener('error', () => {
+        relayConnected = false;
         console.warn('[agent] relay listener error, reconnecting in 5s');
         source.close();
         setTimeout(startRelayListener, 5000);

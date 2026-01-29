@@ -79,3 +79,8 @@ Rules now support:
 - `Like Total ≥` (fires when total likes reach your threshold)
 
 For Like Total, enter a number (e.g., 100) in the value field.
+
+## Health Status
+
+Set `HEALTHCHECK_URL` to your Ned's Decks health endpoint (e.g. `https://neds-decks.onrender.com/health`)
+to show backend reachability on the dashboard.

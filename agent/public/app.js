@@ -57,6 +57,10 @@ const elements = {
     obsStatus: document.getElementById('obsStatus'),
     sbStatus: document.getElementById('sbStatus'),
     refreshObs: document.getElementById('refreshObs'),
+    refreshStatus: document.getElementById('refreshStatus'),
+    relayStatus: document.getElementById('relayStatus'),
+    streamerbotStatus: document.getElementById('streamerbotStatus'),
+    backendStatus: document.getElementById('backendStatus'),
     ruleType: document.getElementById('ruleType'),
     ruleValue: document.getElementById('ruleValue'),
     ruleUseStreamerbot: document.getElementById('ruleUseStreamerbot'),
@@ -592,6 +596,33 @@ const updateActionFields = () => {
     }
 };
 
+const updateHealthStatus = async () => {
+    try {
+        const response = await fetch('/status');
+        const data = await response.json();
+        if (elements.relayStatus) {
+            const relayText = data.relay?.connected ? 'relay: connected' : 'relay: disconnected';
+            elements.relayStatus.textContent = relayText;
+        }
+        if (elements.streamerbotStatus) {
+            const sbText = data.streamerbot?.connected ? 'streamer.bot: connected' : 'streamer.bot: disconnected';
+            elements.streamerbotStatus.textContent = sbText;
+        }
+        if (elements.backendStatus) {
+            const backendState = data.backend?.ok === null
+                ? 'backend: not configured'
+                : data.backend?.ok
+                    ? `backend: ok (${data.backend.status})`
+                    : 'backend: down';
+            elements.backendStatus.textContent = backendState;
+        }
+    } catch (err) {
+        if (elements.relayStatus) elements.relayStatus.textContent = 'relay: error';
+        if (elements.streamerbotStatus) elements.streamerbotStatus.textContent = 'streamer.bot: error';
+        if (elements.backendStatus) elements.backendStatus.textContent = 'backend: error';
+    }
+};
+
 setConnectionState('connecting');
 loadSoundMap();
 setupControls();
@@ -603,6 +634,7 @@ fetchRules();
 fetchSbStatus();
 fetchSbActions();
 updateActionFields();
+updateHealthStatus();
 
 if (elements.refreshGifts) {
     elements.refreshGifts.addEventListener('click', () => {
@@ -616,6 +648,12 @@ if (elements.refreshObs) {
         await fetchObsScenes();
         await fetchSbStatus();
         await fetchSbActions();
+    });
+}
+
+if (elements.refreshStatus) {
+    elements.refreshStatus.addEventListener('click', () => {
+        updateHealthStatus();
     });
 }
 
