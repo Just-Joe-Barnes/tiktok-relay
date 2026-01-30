@@ -21,6 +21,9 @@ body.dock {
 
 body.dock {
   background: radial-gradient(circle at top, #1a1f28 0%, #0e1117 60%, #0b0d11 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .dock-header {
@@ -50,6 +53,8 @@ body.dock {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1;
+  min-height: 0;
 }
 
 .dock-gifts {
@@ -57,13 +62,13 @@ body.dock {
   border-radius: 14px;
   padding: 8px 10px;
   border: 1px solid #202634;
-  max-height: 140px;
+  max-height: 200px;
   overflow: hidden;
 }
 
 .dock-gift-list {
   gap: 6px;
-  max-height: 120px;
+  max-height: 180px;
   overflow-y: auto;
 }
 
@@ -71,8 +76,9 @@ body.dock {
   background: #1b202a;
   border: 1px solid #242a36;
   border-radius: 10px;
-  padding: 6px 10px;
+  padding: 8px 10px;
   font-size: 12px;
+  line-height: 1.4;
 }
 
 .dock-feed {
@@ -80,12 +86,16 @@ body.dock {
   border-radius: 14px;
   padding: 10px;
   border: 1px solid #202634;
-  min-height: 420px;
+  flex: 1;
+  min-height: 200px;
+  overflow: hidden;
 }
 
 .dock-feed-list {
   gap: 8px;
-  min-height: 400px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .dock-feed-list li {

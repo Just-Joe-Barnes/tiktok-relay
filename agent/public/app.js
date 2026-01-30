@@ -175,7 +175,7 @@ const formatGift = (event) => {
     const name = event.username || event.userId || 'unknown';
     const gift = event.giftName || event.giftId || 'gift';
     const coins = event.coins || 0;
-    return `${formatTime(event.receivedAt)} - ${name} sent ${gift} (${coins} coins)`;
+    return ${formatTime(event.receivedAt)} •  •  ( coins);
 };
 
 const formatChat = (event) => {
