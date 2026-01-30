@@ -427,6 +427,7 @@ input[type="file"] {
 
 .chatbox-panel {
   min-height: 420px;
+  height: clamp(320px, 50vh, 560px);
 }
 
 .chatbox {

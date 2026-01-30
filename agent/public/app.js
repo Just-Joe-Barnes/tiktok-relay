@@ -283,12 +283,12 @@ const handleEvent = (event) => {
         appendItem(elements.gifts, formatGift(event), { imageUrl, alt: event.giftName || 'gift' });
         handleGiftSounds(event);
         if (elements.chat) {
-            appendItem(elements.chat, formatGift(event), { imageUrl, alt: event.giftName || 'gift' });
+            appendItemBottom(elements.chat, formatGift(event), { imageUrl, alt: event.giftName || 'gift' });
         }
     } else if (event.eventType === 'chat') {
-        appendItem(elements.chat, formatChat(event));
+        appendItemBottom(elements.chat, formatChat(event));
     } else if (event.eventType === 'command') {
-        appendItem(elements.chat, formatChat({
+        appendItemBottom(elements.chat, formatChat({
             ...event,
             message: `command: ${event.command}`,
         }));
@@ -296,7 +296,7 @@ const handleEvent = (event) => {
         const text = formatEvent(event);
         appendItem(elements.events, text);
         if (elements.chat) {
-            appendItem(elements.chat, text);
+            appendItemBottom(elements.chat, text);
         }
     } else {
         appendItem(elements.events, formatEvent(event));
