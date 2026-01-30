@@ -48,23 +48,6 @@ const {
 } = process.env;
 
 const RECONNECT_DELAY_MS = parseInt(process.env.RECONNECT_DELAY_MS || '30000', 10);
-const STARTUP_CONFIG = {
-    username: TIKTOK_USERNAME || '(missing)',
-    connectWithUniqueId: parseBoolean(TIKTOK_CONNECT_WITH_UNIQUE_ID, false),
-    allowFallback: parseBoolean(TIKTOK_CONNECT_FALLBACK, true),
-    fetchRoomInfoOnConnect: parseBoolean(TIKTOK_FORCE_CONNECT, false)
-        ? false
-        : parseBoolean(TIKTOK_FETCH_ROOMINFO, true),
-    forceConnect: parseBoolean(TIKTOK_FORCE_CONNECT, false),
-    hasSessionId: Boolean(TIKTOK_SESSION_ID),
-    hasTtTargetIdc: Boolean(TIKTOK_TT_TARGET_IDC),
-    hasSignApiKey: Boolean(TIKTOK_SIGN_API_KEY),
-};
-console.log('[relay] startup config:', STARTUP_CONFIG);
-setTimeout(() => {
-    console.log('[relay] startup config (delayed):', STARTUP_CONFIG);
-}, 5000);
-
 if (!TIKTOK_USERNAME || !API_BASE_URL || !RELAY_SECRET) {
     console.error('Missing required env vars: TIKTOK_USERNAME, API_BASE_URL, RELAY_SECRET');
     process.exit(1);
@@ -141,6 +124,23 @@ const parseBoolean = (value, fallback = false) => {
     if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) return false;
     return fallback;
 };
+
+const STARTUP_CONFIG = {
+    username: TIKTOK_USERNAME || '(missing)',
+    connectWithUniqueId: parseBoolean(TIKTOK_CONNECT_WITH_UNIQUE_ID, false),
+    allowFallback: parseBoolean(TIKTOK_CONNECT_FALLBACK, true),
+    fetchRoomInfoOnConnect: parseBoolean(TIKTOK_FORCE_CONNECT, false)
+        ? false
+        : parseBoolean(TIKTOK_FETCH_ROOMINFO, true),
+    forceConnect: parseBoolean(TIKTOK_FORCE_CONNECT, false),
+    hasSessionId: Boolean(TIKTOK_SESSION_ID),
+    hasTtTargetIdc: Boolean(TIKTOK_TT_TARGET_IDC),
+    hasSignApiKey: Boolean(TIKTOK_SIGN_API_KEY),
+};
+console.log('[relay] startup config:', STARTUP_CONFIG);
+setTimeout(() => {
+    console.log('[relay] startup config (delayed):', STARTUP_CONFIG);
+}, 5000);
 
 const parseList = (value, fallback = []) => {
     if (value === undefined || value === null || value === '') return fallback;
