@@ -1,4 +1,4 @@
-﻿const MAX_ITEMS = 200;
+const MAX_ITEMS = 200;
 
 const state = {
     total: 0,
@@ -59,6 +59,7 @@ const elements = {
     uploadStatus: document.getElementById('uploadStatus'),
     audioState: document.getElementById('audioState'),
     obsStatus: document.getElementById('obsStatus'),
+    streamStatus: document.getElementById('streamStatus'),
     sbStatus: document.getElementById('sbStatus'),
     refreshObs: document.getElementById('refreshObs'),
     refreshStatus: document.getElementById('refreshStatus'),
@@ -175,7 +176,7 @@ const formatGift = (event) => {
     const name = event.username || event.userId || 'unknown';
     const gift = event.giftName || event.giftId || 'gift';
     const coins = event.coins || 0;
-    return ${formatTime(event.receivedAt)} �  �  ( coins);
+    return ${formatTime(event.receivedAt)} ?  ?  ( coins);
 };
 
 const formatChat = (event) => {
@@ -439,10 +440,12 @@ const setupStream = () => {
 
     source.addEventListener('hello', () => {
         setConnectionState('connected');
+        if (elements.streamStatus) elements.streamStatus.textContent = 'stream: connected';
     });
 
     source.onopen = () => {
         setConnectionState('connected');
+        if (elements.streamStatus) elements.streamStatus.textContent = 'stream: connected';
     };
 
     source.addEventListener('snapshot', (event) => {
@@ -467,6 +470,7 @@ const setupStream = () => {
 
     source.onerror = () => {
         setConnectionState('disconnected');
+        if (elements.streamStatus) elements.streamStatus.textContent = 'stream: disconnected';
         appendItem(elements.log, `${new Date().toLocaleTimeString()} - stream error or disconnected`);
     };
 };
@@ -723,7 +727,12 @@ const updateHealthStatus = async () => {
         if (elements.relayStatus) {
             const source = data.source || 'relay';
             const connected = data.relay?.connected;
-            elements.relayStatus.textContent = source:  ();
+            elements.relayStatus.textContent = "source: " + source + " (" + (connected ? 'connected' : 'disconnected') + ")";
+            if (source === 'tikfinity') {
+                setConnectionState(data.tikfinity?.connected ? 'connected' : 'disconnected');
+            } else {
+                setConnectionState(connected ? 'connected' : 'disconnected');
+            }
             setConnectionState(connected ? 'connected' : 'disconnected');
             setConnectionState(connected ? 'connected' : 'disconnected');
             if (source === 'tikfinity' && data.tikfinity?.lastError) {
