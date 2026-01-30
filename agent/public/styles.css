@@ -265,6 +265,28 @@ input[type="file"] {
   color: #e2e6ef;
 }
 
+.chatbox-panel {
+  min-height: 320px;
+}
+
+.chatbox {
+  gap: 10px;
+}
+
+.chatbox li {
+  background: #151a22;
+  border: 1px solid #242a36;
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.chatbox li::before {
+  content: "💬";
+  margin-right: 8px;
+  opacity: 0.6;
+}
+
 .rule-item {
   display: flex;
   align-items: center;
