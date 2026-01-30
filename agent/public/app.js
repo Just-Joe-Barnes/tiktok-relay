@@ -76,12 +76,24 @@ const elements = {
     ruleSbAction: document.getElementById('ruleSbAction'),
     saveRule: document.getElementById('saveRule'),
     rulesList: document.getElementById('rulesList'),
+    openLogs: document.getElementById('openLogs'),
+    openRules: document.getElementById('openRules'),
+    closeLogs: document.getElementById('closeLogs'),
+    closeRules: document.getElementById('closeRules'),
+    logModal: document.getElementById('logModal'),
+    rulesModal: document.getElementById('rulesModal'),
 };
 
 const setConnectionState = (value) => {
     if (!elements.connectionState) return;
     elements.connectionState.textContent = value;
     elements.connectionState.dataset.state = value;
+};
+
+const toggleModal = (modal, isOpen) => {
+    if (!modal) return;
+    modal.classList.toggle('is-open', isOpen);
+    modal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
 };
 
 const setAudioState = (enabled) => {
@@ -435,6 +447,37 @@ const setupControls = () => {
     setAudioState(false);
 };
 
+const setupModals = () => {
+    if (elements.openLogs && elements.logModal) {
+        elements.openLogs.addEventListener('click', () => toggleModal(elements.logModal, true));
+    }
+    if (elements.openRules && elements.rulesModal) {
+        elements.openRules.addEventListener('click', () => toggleModal(elements.rulesModal, true));
+    }
+    if (elements.closeLogs && elements.logModal) {
+        elements.closeLogs.addEventListener('click', () => toggleModal(elements.logModal, false));
+    }
+    if (elements.closeRules && elements.rulesModal) {
+        elements.closeRules.addEventListener('click', () => toggleModal(elements.rulesModal, false));
+    }
+    if (elements.logModal) {
+        elements.logModal.addEventListener('click', (event) => {
+            if (event.target === elements.logModal) toggleModal(elements.logModal, false);
+        });
+    }
+    if (elements.rulesModal) {
+        elements.rulesModal.addEventListener('click', (event) => {
+            if (event.target === elements.rulesModal) toggleModal(elements.rulesModal, false);
+        });
+    }
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            toggleModal(elements.logModal, false);
+            toggleModal(elements.rulesModal, false);
+        }
+    });
+};
+
 const setupStream = () => {
     const source = new EventSource('/stream');
 
@@ -757,6 +800,7 @@ const updateHealthStatus = async () => {
 setConnectionState('connecting');
 loadSoundMap();
 setupControls();
+setupModals();
 setupStream();
 fetchGiftList(false);
 fetchObsStatus();

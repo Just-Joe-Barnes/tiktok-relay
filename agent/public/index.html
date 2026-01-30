@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TikTok Relay Agent</title>
-  <link rel="stylesheet" href="styles.css?v=20260130" />
+  <link rel="stylesheet" href="styles.css?v=20260130.2" />
 </head>
 <body>
   <header class="header">
@@ -25,6 +25,10 @@
         <span class="label">Total</span>
         <span id="totalEvents" class="value">0</span>
       </div>
+    </div>
+    <div class="header-actions">
+      <button id="openLogs" class="button button-ghost">View Logs</button>
+      <button id="openRules" class="button button-ghost">Edit Rules</button>
     </div>
   </header>
 
@@ -125,49 +129,63 @@
       <h2>Activity</h2>
       <ul id="events" class="list"></ul>
     </section>
-
-    <section class="panel wide log-panel">
-      <h2>Log</h2>
-      <ul id="log" class="list"></ul>
-    </section>
-
-    <section class="panel wide rules-panel">
-      <h2>Rules</h2>
-      <div class="rules-meta">
-        <span id="obsStatus" class="chip">obs: --</span>
-        <span id="sbStatus" class="chip">sb: --</span>
-        <button id="refreshObs" class="button button-ghost">Refresh</button>
-      </div>
-      <div class="rules-form">
-        <select id="ruleType">
-          <option value="gift">Gift</option>
-          <option value="command">Command</option>
-          <option value="share">Share</option>
-          <option value="like_total">Like Total &gt;=</option>
-        </select>
-        <input id="ruleValue" type="text" list="giftList" autocomplete="on" placeholder="Gift name, command, or like threshold" />
-        <label class="checkbox">
-          <input id="ruleUseStreamerbot" type="checkbox" />
-          <span>Use Streamer.bot</span>
-        </label>
-        <select id="ruleAction">
-          <option value="switchScene">Switch Scene</option>
-          <option value="toggleSource">Toggle Source</option>
-          <option value="showSource">Show Source</option>
-          <option value="hideSource">Hide Source</option>
-          <option value="toggleFilter">Toggle Filter</option>
-          <option value="playMedia">Play Media Source</option>
-        </select>
-        <select id="ruleScene"></select>
-        <select id="ruleSource"></select>
-        <select id="ruleFilter"></select>
-        <select id="ruleSbAction"></select>
-        <button id="saveRule" class="button">Save Rule</button>
-      </div>
-      <ul id="rulesList" class="list"></ul>
-    </section>
   </main>
 
-  <script src="app.js?v=20260130"></script>
+  <div id="logModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Logs</h2>
+        <button id="closeLogs" class="button button-ghost">Close</button>
+      </div>
+      <div class="modal-body">
+        <ul id="log" class="list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="rulesModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h2>Rules</h2>
+        <button id="closeRules" class="button button-ghost">Close</button>
+      </div>
+      <div class="modal-body">
+        <div class="rules-meta">
+          <span id="obsStatus" class="chip">obs: --</span>
+          <span id="sbStatus" class="chip">sb: --</span>
+          <button id="refreshObs" class="button button-ghost">Refresh</button>
+        </div>
+        <div class="rules-form">
+          <select id="ruleType">
+            <option value="gift">Gift</option>
+            <option value="command">Command</option>
+            <option value="share">Share</option>
+            <option value="like_total">Like Total &gt;=</option>
+          </select>
+          <input id="ruleValue" type="text" list="giftList" autocomplete="on" placeholder="Gift name, command, or like threshold" />
+          <label class="checkbox">
+            <input id="ruleUseStreamerbot" type="checkbox" />
+            <span>Use Streamer.bot</span>
+          </label>
+          <select id="ruleAction">
+            <option value="switchScene">Switch Scene</option>
+            <option value="toggleSource">Toggle Source</option>
+            <option value="showSource">Show Source</option>
+            <option value="hideSource">Hide Source</option>
+            <option value="toggleFilter">Toggle Filter</option>
+            <option value="playMedia">Play Media Source</option>
+          </select>
+          <select id="ruleScene"></select>
+          <select id="ruleSource"></select>
+          <select id="ruleFilter"></select>
+          <select id="ruleSbAction"></select>
+          <button id="saveRule" class="button">Save Rule</button>
+        </div>
+        <ul id="rulesList" class="list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=20260130.2"></script>
 </body>
 </html>

@@ -148,6 +148,13 @@ body.dock {
   flex-wrap: wrap;
 }
 
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-self: flex-start;
+}
+
 .status-item {
   background: #1f242e;
   border-radius: 12px;
@@ -418,6 +425,63 @@ input[type="file"] {
   gap: 8px;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 8, 12, 0.75);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.modal-backdrop.is-open {
+  display: flex;
+}
+
+.modal {
+  background: #171b22;
+  border-radius: 18px;
+  padding: 22px 24px;
+  width: min(720px, 92vw);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  border: 1px solid #242a36;
+}
+
+.modal-wide {
+  width: min(1100px, 94vw);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.modal-body .list {
+  flex: 1;
+  min-height: 0;
+}
+
 @media (max-width: 1200px) {
   .grid {
     grid-template-columns: repeat(2, minmax(260px, 1fr));
@@ -435,6 +499,11 @@ input[type="file"] {
 
   .header {
     flex-direction: column;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .controls {
