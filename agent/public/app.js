@@ -176,7 +176,7 @@ const formatGift = (event) => {
     const name = event.username || event.userId || 'unknown';
     const gift = event.giftName || event.giftId || 'gift';
     const coins = event.coins || 0;
-    return ${formatTime(event.receivedAt)} ?  ?  ( coins);
+    return `${formatTime(event.receivedAt)} - ${name} sent ${gift} (${coins} coins)`;
 };
 
 const formatChat = (event) => {
@@ -311,7 +311,7 @@ const sendTikfinityTest = async (payload) => {
 };
 const buildLocalTikfinityEvent = (eventType, value) => {
     const base = {
-        id: 	ikfinity-local-,
+        id: `tikfinity-local-${Date.now()}`,
         platform: 'tiktok',
         eventType,
         userId: 'tikfinity-test',
@@ -726,14 +726,10 @@ const updateHealthStatus = async () => {
         const data = await response.json();
         if (elements.relayStatus) {
             const source = data.source || 'relay';
-            const connected = data.relay?.connected;
-            elements.relayStatus.textContent = "source: " + source + " (" + (connected ? 'connected' : 'disconnected') + ")";
-            if (source === 'tikfinity') {
-                setConnectionState(data.tikfinity?.connected ? 'connected' : 'disconnected');
-            } else {
-                setConnectionState(connected ? 'connected' : 'disconnected');
-            }
-            setConnectionState(connected ? 'connected' : 'disconnected');
+            const relayConnected = Boolean(data.relay?.connected);
+            const tikfinityConnected = Boolean(data.tikfinity?.connected);
+            const connected = source === 'tikfinity' ? tikfinityConnected : relayConnected;
+            elements.relayStatus.textContent = `source: ${source} (${connected ? 'connected' : 'disconnected'})`;
             setConnectionState(connected ? 'connected' : 'disconnected');
             if (source === 'tikfinity' && data.tikfinity?.lastError) {
                 appendItem(elements.log, `${new Date().toLocaleTimeString()} - tikfinity error: ${data.tikfinity.lastError}`);
