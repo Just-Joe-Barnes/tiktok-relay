@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TikTok Relay Agent</title>
-  <link rel="stylesheet" href="styles.css?v=20260130.2" />
+  <link rel="stylesheet" href="styles.css?v=20260130.3" />
 </head>
 <body>
   <header class="header">
@@ -25,10 +25,6 @@
         <span class="label">Total</span>
         <span id="totalEvents" class="value">0</span>
       </div>
-    </div>
-    <div class="header-actions">
-      <button id="openLogs" class="button button-ghost">View Logs</button>
-      <button id="openRules" class="button button-ghost">Edit Rules</button>
     </div>
   </header>
 
@@ -129,6 +125,13 @@
       <h2>Activity</h2>
       <ul id="events" class="list"></ul>
     </section>
+
+    <section class="panel wide action-panel">
+      <div class="action-buttons">
+        <button id="openLogs" class="button button-primary">View Logs</button>
+        <button id="openRules" class="button button-primary">Edit Rules</button>
+      </div>
+    </section>
   </main>
 
   <div id="logModal" class="modal-backdrop" aria-hidden="true">
@@ -186,6 +189,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=20260130.2"></script>
+  <script src="app.js?v=20260130.3"></script>
 </body>
 </html>
