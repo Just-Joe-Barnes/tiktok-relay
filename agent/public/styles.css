@@ -406,6 +406,25 @@ input[type="file"] {
   color: #e2e6ef;
 }
 
+.list li.with-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.list li .item-text {
+  flex: 1;
+}
+
+.gift-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #0f131a;
+  padding: 4px;
+}
+
 .chatbox-panel {
   min-height: 420px;
 }
@@ -433,6 +452,12 @@ input[type="file"] {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.rule-item .gift-icon {
+  width: 20px;
+  height: 20px;
+  padding: 2px;
 }
 
 .rule-actions {

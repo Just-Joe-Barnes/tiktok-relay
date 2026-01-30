@@ -23,7 +23,8 @@ const COMMAND_PREFIXES = (process.env.COMMAND_PREFIXES || '!')
     .map((item) => item.trim())
     .filter(Boolean);
 const AGENT_STREAM_BUFFER_MAX = Math.max(0, parseInt(process.env.AGENT_STREAM_BUFFER_MAX || '200', 10));
-const GIFT_LIST_URL = process.env.GIFT_LIST_URL || 'https://mcstreams.com/gifts';
+const DEFAULT_GIFT_LIST_URL = 'https://www.beetgames.com/gift_data.js';
+const GIFT_LIST_URL = process.env.GIFT_LIST_URL || DEFAULT_GIFT_LIST_URL;
 const GIFT_LIST_CACHE_MS = Math.max(60_000, parseInt(process.env.GIFT_LIST_CACHE_MS || '43200000', 10));
 const SOUNDS_DIR = path.join(__dirname, 'public', 'sounds');
 const DATA_DIR = path.join(__dirname, 'data');
@@ -412,7 +413,27 @@ const stripTags = (html) => html.replace(/<script[\s\S]*?<\/script>/gi, '\n')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&');
 
-const parseGiftList = (html) => {
+const parseGiftDataJs = (body) => {
+    const start = body.indexOf('[');
+    const end = body.lastIndexOf(']');
+    if (start === -1 || end === -1 || end <= start) {
+        throw new Error('Gift data JSON block not found');
+    }
+    const json = body.slice(start, end + 1);
+    const data = JSON.parse(json);
+    const gifts = data
+        .map((gift, index) => ({
+            id: gift.id ? String(gift.id) : String(index + 1),
+            name: gift.name,
+            coins: Number(gift.coins) || 0,
+            imageUrl: gift.src_url || gift.imageUrl || gift.image || null,
+            localPath: gift.local_path || null,
+        }))
+        .filter((gift) => gift.name);
+    return { gifts, lastUpdateText: null };
+};
+
+const parseGiftListFromHtml = (html) => {
     const text = stripTags(html);
     const tokens = text
         .split(/\r?\n/)
@@ -441,6 +462,13 @@ const parseGiftList = (html) => {
     const lastUpdateText = updateMatch ? updateMatch[1] : null;
 
     return { gifts, lastUpdateText };
+};
+
+const parseGiftList = (body) => {
+    if (body.includes('giftData') || body.includes('src_url')) {
+        return parseGiftDataJs(body);
+    }
+    return parseGiftListFromHtml(body);
 };
 
 const refreshGiftList = async () => {

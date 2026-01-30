@@ -50,6 +50,8 @@ const elements = {
     tikfinityTestType: document.getElementById('tikfinityTestType'),
     tikfinityTestValue: document.getElementById('tikfinityTestValue'),
     tikfinityTest: document.getElementById('tikfinityTest'),
+    testChat: document.getElementById('testChat'),
+    testShare: document.getElementById('testShare'),
     refreshGifts: document.getElementById('refreshGifts'),
     giftList: document.getElementById('giftList'),
     giftListStatus: document.getElementById('giftListStatus'),
@@ -112,20 +114,44 @@ const formatTime = (iso) => {
     return date.toLocaleTimeString();
 };
 
-const appendItem = (list, text) => {
+const appendItem = (list, text, options = {}) => {
     if (!list) return;
     const item = document.createElement('li');
-    item.textContent = text;
+    if (options.imageUrl) {
+        item.classList.add('with-icon');
+        const img = document.createElement('img');
+        img.className = 'gift-icon';
+        img.src = options.imageUrl;
+        img.alt = options.alt || '';
+        img.loading = 'lazy';
+        item.appendChild(img);
+    }
+    const span = document.createElement('span');
+    span.className = 'item-text';
+    span.textContent = text;
+    item.appendChild(span);
     list.prepend(item);
     if (list.children.length > MAX_ITEMS) {
         list.removeChild(list.lastChild);
     }
 };
 
-const appendItemBottom = (list, text) => {
+const appendItemBottom = (list, text, options = {}) => {
     if (!list) return;
     const item = document.createElement('li');
-    item.textContent = text;
+    if (options.imageUrl) {
+        item.classList.add('with-icon');
+        const img = document.createElement('img');
+        img.className = 'gift-icon';
+        img.src = options.imageUrl;
+        img.alt = options.alt || '';
+        img.loading = 'lazy';
+        item.appendChild(img);
+    }
+    const span = document.createElement('span');
+    span.className = 'item-text';
+    span.textContent = text;
+    item.appendChild(span);
     list.appendChild(item);
     if (list.children.length > MAX_ITEMS) {
         list.removeChild(list.firstChild);
@@ -253,8 +279,12 @@ const handleEvent = (event) => {
     }
 
     if (event.eventType === 'gift' || event.eventType === 'gift_streak') {
-        appendItem(elements.gifts, formatGift(event));
+        const imageUrl = resolveGiftImage(event.giftName || event.giftId);
+        appendItem(elements.gifts, formatGift(event), { imageUrl, alt: event.giftName || 'gift' });
         handleGiftSounds(event);
+        if (elements.chat) {
+            appendItem(elements.chat, formatGift(event), { imageUrl, alt: event.giftName || 'gift' });
+        }
     } else if (event.eventType === 'chat') {
         appendItem(elements.chat, formatChat(event));
     } else if (event.eventType === 'command') {
@@ -262,21 +292,38 @@ const handleEvent = (event) => {
             ...event,
             message: `command: ${event.command}`,
         }));
+    } else if (event.eventType === 'share') {
+        const text = formatEvent(event);
+        appendItem(elements.events, text);
+        if (elements.chat) {
+            appendItem(elements.chat, text);
+        }
     } else {
         appendItem(elements.events, formatEvent(event));
     }
 
-    appendItem(elements.log, formatLog(event));
+    const logImage = event.eventType === 'gift' || event.eventType === 'gift_streak'
+        ? resolveGiftImage(event.giftName || event.giftId)
+        : null;
+    appendItem(elements.log, formatLog(event), { imageUrl: logImage, alt: event.giftName || 'gift' });
     if (elements.feed) {
-        appendItemBottom(elements.feed, formatLog(event));
+        appendItemBottom(elements.feed, formatLog(event), { imageUrl: logImage, alt: event.giftName || 'gift' });
     }
 };
 
 const resolveGiftCoins = (giftName) => {
     const key = normalizeText(giftName);
     if (!key) return 1;
-    const value = giftCatalog.get(key);
-    return Number.isFinite(value) && value > 0 ? value : 1;
+    const entry = giftCatalog.get(key);
+    const coins = entry?.coins ?? entry;
+    return Number.isFinite(coins) && coins > 0 ? coins : 1;
+};
+
+const resolveGiftImage = (giftName) => {
+    const key = normalizeText(giftName);
+    if (!key) return null;
+    const entry = giftCatalog.get(key);
+    return entry?.imageUrl || entry?.src_url || entry?.image || null;
 };
 
 const buildTestEvent = (giftName = 'Heart Me', repeatCount = 1) => {
@@ -407,6 +454,23 @@ const setupControls = () => {
         });
     }
 
+    if (elements.testChat) {
+        elements.testChat.addEventListener('click', () => {
+            const message = elements.tikfinityTestValue?.value || 'Test chat from Tikfinity';
+            const localEvent = buildLocalTikfinityEvent('chat', message);
+            handleEvent(localEvent);
+            void sendTikfinityTest({ eventType: 'chat', value: message });
+        });
+    }
+
+    if (elements.testShare) {
+        elements.testShare.addEventListener('click', () => {
+            const localEvent = buildLocalTikfinityEvent('share', '');
+            handleEvent(localEvent);
+            void sendTikfinityTest({ eventType: 'share', value: '' });
+        });
+    }
+
     if (elements.uploadSound) {
         elements.uploadSound.addEventListener('click', async () => {
             const giftName = elements.soundGiftName?.value?.trim();
@@ -527,7 +591,10 @@ const renderGiftList = (gifts) => {
         option.value = gift.name;
         option.label = `${gift.name} (${gift.coins})`;
         elements.giftList.appendChild(option);
-        giftCatalog.set(normalizeText(gift.name), Number(gift.coins));
+        giftCatalog.set(normalizeText(gift.name), {
+            coins: Number(gift.coins),
+            imageUrl: gift.imageUrl || gift.src_url || gift.image || null,
+        });
     });
 };
 
@@ -543,6 +610,9 @@ const fetchGiftList = async (refresh = false) => {
         }
         renderGiftList(data.gifts || []);
         elements.giftListStatus.textContent = `gifts: ${data.gifts?.length || 0}`;
+        if (elements.rulesList) {
+            await fetchRules();
+        }
     } catch (err) {
         elements.giftListStatus.textContent = 'gifts: fetch failed';
         appendItem(elements.log, `${new Date().toLocaleTimeString()} - gift list fetch failed`);
@@ -707,11 +777,23 @@ const renderRulesList = (rules) => {
         const li = document.createElement('li');
         li.className = 'rule-item';
         const text = document.createElement('span');
+        text.className = 'item-text';
         const matchLabel = `${rule.match?.type} ${rule.match?.value}`;
         const actionLabel = rule.action?.type === 'streamerbotAction'
             ? `streamer.bot: ${rule.action?.actionName || rule.action?.actionId || 'action'}`
             : `${rule.action?.type}`;
         text.textContent = `${matchLabel} -> ${actionLabel}`;
+        if (rule.match?.type === 'gift') {
+            const imageUrl = resolveGiftImage(rule.match?.value);
+            if (imageUrl) {
+                const img = document.createElement('img');
+                img.className = 'gift-icon';
+                img.src = imageUrl;
+                img.alt = rule.match?.value || 'gift';
+                img.loading = 'lazy';
+                li.appendChild(img);
+            }
+        }
         const actions = document.createElement('div');
         actions.className = 'rule-actions';
         const testBtn = document.createElement('button');
