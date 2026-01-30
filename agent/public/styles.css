@@ -336,10 +336,12 @@ input[type="file"] {
 
 .gifts-panel {
   min-height: 320px;
+  height: clamp(260px, 42vh, 520px);
 }
 
 .activity-panel {
   min-height: 320px;
+  height: clamp(260px, 42vh, 520px);
 }
 
 .log-panel {

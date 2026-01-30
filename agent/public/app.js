@@ -280,7 +280,7 @@ const handleEvent = (event) => {
 
     if (event.eventType === 'gift' || event.eventType === 'gift_streak') {
         const imageUrl = resolveGiftImage(event.giftName || event.giftId);
-        appendItem(elements.gifts, formatGift(event), { imageUrl, alt: event.giftName || 'gift' });
+        appendItemBottom(elements.gifts, formatGift(event), { imageUrl, alt: event.giftName || 'gift' });
         handleGiftSounds(event);
         if (elements.chat) {
             appendItemBottom(elements.chat, formatGift(event), { imageUrl, alt: event.giftName || 'gift' });
@@ -294,12 +294,12 @@ const handleEvent = (event) => {
         }));
     } else if (event.eventType === 'share') {
         const text = formatEvent(event);
-        appendItem(elements.events, text);
+        appendItemBottom(elements.events, text);
         if (elements.chat) {
             appendItemBottom(elements.chat, text);
         }
     } else {
-        appendItem(elements.events, formatEvent(event));
+        appendItemBottom(elements.events, formatEvent(event));
     }
 
     const logImage = event.eventType === 'gift' || event.eventType === 'gift_streak'
