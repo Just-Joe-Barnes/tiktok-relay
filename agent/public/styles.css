@@ -76,13 +76,13 @@ body.dock {
   border-radius: 14px;
   padding: 8px 10px;
   border: 1px solid #202634;
-  max-height: 200px;
+  max-height: 240px;
   overflow: hidden;
 }
 
 .dock-gift-list {
   gap: 6px;
-  max-height: 180px;
+  max-height: 220px;
   overflow-y: auto;
 }
 
