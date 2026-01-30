@@ -15,6 +15,13 @@ const app = express();
 const PORT = Math.max(1, parseInt(process.env.AGENT_PORT || '5177', 10));
 const STREAM_URL = process.env.AGENT_STREAM_URL || 'http://localhost:3000/stream';
 const STREAM_SECRET = process.env.STREAM_SECRET || '';
+const TIKFINITY_WS_URL = process.env.TIKFINITY_WS_URL || '';
+const EVENT_SOURCE = (process.env.EVENT_SOURCE || (TIKFINITY_WS_URL ? 'tikfinity' : 'relay')).trim().toLowerCase();
+const COMMAND_PREFIXES = (process.env.COMMAND_PREFIXES || '!')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+const AGENT_STREAM_BUFFER_MAX = Math.max(0, parseInt(process.env.AGENT_STREAM_BUFFER_MAX || '200', 10));
 const GIFT_LIST_URL = process.env.GIFT_LIST_URL || 'https://mcstreams.com/gifts';
 const GIFT_LIST_CACHE_MS = Math.max(60_000, parseInt(process.env.GIFT_LIST_CACHE_MS || '43200000', 10));
 const SOUNDS_DIR = path.join(__dirname, 'public', 'sounds');
@@ -60,15 +67,88 @@ const sbPending = new Map();
 
 let relayConnected = false;
 let lastRelayEventAt = null;
+let tikfinitySocket = null;
+let tikfinityConnected = false;
+let tikfinityLastError = null;
+let tikfinityReconnectTimer = null;
+
+const streamClients = new Set();
+const streamBuffer = [];
 
 app.get('/config', (_req, res) => {
     res.json({
         streamUrl: STREAM_URL,
         streamSecret: STREAM_SECRET,
+        source: EVENT_SOURCE,
     });
 });
 
 const normalizeText = (value) => String(value || '').trim().toLowerCase();
+
+const enqueueStreamEvent = (event) => {
+    if (!event) return;
+    streamBuffer.push(event);
+    if (AGENT_STREAM_BUFFER_MAX > 0) {
+        while (streamBuffer.length > AGENT_STREAM_BUFFER_MAX) {
+            streamBuffer.shift();
+        }
+    }
+    const payload = `event: event\ndata: ${JSON.stringify(event)}\n\n`;
+    streamClients.forEach((client) => {
+        try {
+            client.res.write(payload);
+        } catch (err) {
+            streamClients.delete(client);
+        }
+    });
+};
+
+const parseCommandsFromChat = (message) => {
+    if (!message) return [];
+    if (!COMMAND_PREFIXES.length) return [];
+    const trimmed = String(message).trim();
+    const commands = [];
+    for (const prefix of COMMAND_PREFIXES) {
+        if (!prefix) continue;
+        if (trimmed.startsWith(prefix)) {
+            const command = trimmed.slice(prefix.length).trim().split(/\s+/)[0];
+            if (command) commands.push(command);
+        }
+    }
+    return commands;
+};
+
+const handleIncomingEvent = async (event) => {
+    if (!event || !event.eventType) return;
+
+    if (normalizeText(event.eventType) === 'like') {
+        const count = Number(event.totalLikeCount || 0);
+        if (Number.isFinite(count) && count > likeState.totalLikes) {
+            likeState.totalLikes = count;
+        } else {
+            likeState.totalLikes += Number(event.likeCount || 1);
+        }
+        event.totalLikeCount = likeState.totalLikes;
+    }
+
+    lastRelayEventAt = new Date().toISOString();
+    enqueueStreamEvent(event);
+    await applyRules(event);
+
+    if (normalizeText(event.eventType) === 'chat' && !event.command) {
+        const commands = parseCommandsFromChat(event.message);
+        for (const command of commands) {
+            const commandEvent = {
+                ...event,
+                id: `${event.id || 'cmd'}-${command}`,
+                eventType: 'command',
+                command,
+            };
+            enqueueStreamEvent(commandEvent);
+            await applyRules(commandEvent);
+        }
+    }
+};
 
 const loadRules = () => {
     try {
@@ -470,9 +550,15 @@ const checkBackendHealth = async () => {
 app.get('/status', async (_req, res) => {
     const backend = await checkBackendHealth();
     res.json({
+        source: EVENT_SOURCE,
         relay: {
-            connected: relayConnected,
+            connected: EVENT_SOURCE === 'relay' ? relayConnected : tikfinityConnected,
             lastEventAt: lastRelayEventAt,
+        },
+        tikfinity: {
+            connected: tikfinityConnected,
+            lastError: tikfinityLastError,
+            url: TIKFINITY_WS_URL,
         },
         streamerbot: {
             connected: sbConnected,
@@ -603,6 +689,7 @@ app.post('/rules/:id/test', async (req, res) => {
 });
 
 const startRelayListener = () => {
+    if (EVENT_SOURCE !== 'relay') return;
     const streamUrl = buildStreamUrl();
     const source = new EventSource(streamUrl.toString());
 
@@ -614,17 +701,7 @@ const startRelayListener = () => {
     source.addEventListener('event', async (message) => {
         try {
             const event = JSON.parse(message.data);
-            if (normalizeText(event.eventType) === 'like') {
-                const count = Number(event.totalLikeCount || 0);
-                if (Number.isFinite(count) && count > likeState.totalLikes) {
-                    likeState.totalLikes = count;
-                } else {
-                    likeState.totalLikes += Number(event.likeCount || 1);
-                }
-                event.totalLikeCount = likeState.totalLikes;
-            }
-            lastRelayEventAt = new Date().toISOString();
-            await applyRules(event);
+            await handleIncomingEvent(event);
         } catch (err) {
             console.warn('[agent] relay listener parse error:', err.message || err);
         }
@@ -635,6 +712,103 @@ const startRelayListener = () => {
         console.warn('[agent] relay listener error, reconnecting in 5s');
         source.close();
         setTimeout(startRelayListener, 5000);
+    });
+};
+
+const mapTikfinityEvent = (payload) => {
+    if (!payload || !payload.event) return null;
+    const eventType = normalizeText(payload.event);
+    const data = payload.data || {};
+    const userId = data.userId || data.uniqueId || data.user?.userId || data.user?.uniqueId || null;
+    const username = data.uniqueId || data.user?.uniqueId || data.nickname || data.user?.nickname || null;
+    const base = {
+        id: data.msgId || data.eventId || `tikfinity-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        platform: 'tiktok',
+        eventType,
+        userId,
+        username,
+        receivedAt: new Date().toISOString(),
+        raw: data,
+    };
+
+    if (eventType === 'chat') {
+        return {
+            ...base,
+            message: data.comment || data.message || '',
+        };
+    }
+
+    if (eventType === 'gift') {
+        return {
+            ...base,
+            giftName: data.giftName || data.gift?.giftName || null,
+            giftId: data.giftId || data.gift?.giftId || null,
+            coins: data.diamondCount || data.gift?.diamondCount || data.diamondCountTotal || 0,
+            repeatCount: data.repeatCount || 1,
+            repeatEnd: data.repeatEnd ?? true,
+            giftType: data.giftType || 0,
+        };
+    }
+
+    if (eventType === 'like') {
+        return {
+            ...base,
+            likeCount: data.likeCount || data.count || 1,
+            totalLikeCount: data.totalLikeCount || data.total || null,
+        };
+    }
+
+    return base;
+};
+
+const scheduleTikfinityReconnect = () => {
+    if (tikfinityReconnectTimer) return;
+    tikfinityReconnectTimer = setTimeout(() => {
+        tikfinityReconnectTimer = null;
+        startTikfinityListener();
+    }, 5000);
+};
+
+const startTikfinityListener = () => {
+    if (EVENT_SOURCE !== 'tikfinity') return;
+    if (!TIKFINITY_WS_URL) {
+        tikfinityLastError = 'Missing TIKFINITY_WS_URL';
+        console.warn('[agent] Tikfinity WS URL missing');
+        return;
+    }
+    if (tikfinitySocket) return;
+
+    console.log(`[agent] connecting to Tikfinity: ${TIKFINITY_WS_URL}`);
+    tikfinitySocket = new WebSocket(TIKFINITY_WS_URL);
+
+    tikfinitySocket.on('open', () => {
+        tikfinityConnected = true;
+        tikfinityLastError = null;
+        console.log('[agent] Tikfinity connected');
+    });
+
+    tikfinitySocket.on('message', async (data) => {
+        try {
+            const payload = JSON.parse(data.toString());
+            const event = mapTikfinityEvent(payload);
+            if (event) {
+                await handleIncomingEvent(event);
+            }
+        } catch (err) {
+            console.warn('[agent] Tikfinity parse error:', err.message || err);
+        }
+    });
+
+    tikfinitySocket.on('close', () => {
+        tikfinityConnected = false;
+        tikfinitySocket = null;
+        console.warn('[agent] Tikfinity disconnected, reconnecting in 5s');
+        scheduleTikfinityReconnect();
+    });
+
+    tikfinitySocket.on('error', (err) => {
+        tikfinityLastError = err.message || String(err);
+        console.warn('[agent] Tikfinity error:', tikfinityLastError);
     });
 };
 
@@ -650,54 +824,21 @@ const buildStreamUrl = () => {
 };
 
 app.get('/stream', (req, res) => {
-    const streamUrl = buildStreamUrl();
-    const isHttps = streamUrl.protocol === 'https:';
-
     res.status(200);
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders?.();
+    const client = { id: randomUUID(), res };
+    streamClients.add(client);
 
-    console.log(`[agent] connecting to relay stream: ${streamUrl.toString()}`);
-
-    const upstreamReq = (isHttps ? https : http).request(
-        streamUrl,
-        { headers: { Accept: 'text/event-stream' } },
-        (upstreamRes) => {
-            console.log(`[agent] relay stream status: ${upstreamRes.statusCode}`);
-            if (upstreamRes.statusCode !== 200) {
-                res.write(`event: error\ndata: ${JSON.stringify({ status: upstreamRes.statusCode })}\n\n`);
-                res.end();
-                upstreamRes.resume();
-                return;
-            }
-
-            upstreamRes.on('data', (chunk) => {
-                res.write(chunk);
-            });
-
-            upstreamRes.on('end', () => {
-                console.log('[agent] relay stream ended');
-                res.end();
-            });
-        }
-    );
-
-    upstreamReq.on('error', (err) => {
-        console.error('[agent] relay stream error:', err.message || err);
-        try {
-            res.write(`event: error\ndata: ${JSON.stringify({ message: err.message || String(err) })}\n\n`);
-        } catch (writeErr) {
-            // Ignore write errors when client is gone.
-        }
-        res.end();
-    });
-
-    upstreamReq.end();
+    res.write(`event: hello\ndata: ${JSON.stringify({ id: client.id, source: EVENT_SOURCE })}\n\n`);
+    if (streamBuffer.length) {
+        res.write(`event: snapshot\ndata: ${JSON.stringify(streamBuffer)}\n\n`);
+    }
 
     req.on('close', () => {
-        upstreamReq.destroy();
+        streamClients.delete(client);
         res.end();
     });
 });
@@ -708,4 +849,5 @@ app.listen(PORT, () => {
     connectObs();
     connectStreamerBot();
     startRelayListener();
+    startTikfinityListener();
 });

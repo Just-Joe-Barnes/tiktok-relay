@@ -601,8 +601,12 @@ const updateHealthStatus = async () => {
         const response = await fetch('/status');
         const data = await response.json();
         if (elements.relayStatus) {
-            const relayText = data.relay?.connected ? 'relay: connected' : 'relay: disconnected';
-            elements.relayStatus.textContent = relayText;
+            const source = data.source || 'relay';
+            const connected = data.relay?.connected;
+            elements.relayStatus.textContent = `source: ${source} (${connected ? 'connected' : 'disconnected'})`;
+            if (source === 'tikfinity' && data.tikfinity?.lastError) {
+                appendItem(elements.log, `${new Date().toLocaleTimeString()} - tikfinity error: ${data.tikfinity.lastError}`);
+            }
         }
         if (elements.streamerbotStatus) {
             const sbText = data.streamerbot?.connected ? 'streamer.bot: connected' : 'streamer.bot: disconnected';
