@@ -27,9 +27,9 @@ start "" http://localhost:5177
 echo Starting agent...
 set "LOG_FILE=%SCRIPT_DIR%agent-start.log"
 echo ===== %DATE% %TIME% ===== > "%LOG_FILE%"
-start "" /b cmd /c "npm start >> \"%LOG_FILE%\" 2>&1"
-echo Tailing log output...
-powershell -NoProfile -Command "Get-Content -LiteralPath $env:LOG_FILE -Wait"
+powershell -NoProfile -Command "npm start 2>&1 | Tee-Object -FilePath '%LOG_FILE%'"
+echo Agent exited with code %errorlevel%.
+pause
 exit /b
 
 :install
