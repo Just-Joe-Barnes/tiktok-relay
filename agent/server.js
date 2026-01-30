@@ -663,6 +663,56 @@ app.post('/test-event', async (req, res) => {
     }
 });
 
+app.post('/test-tikfinity', async (req, res) => {
+    const { eventType, value } = req.body || {};
+    if (!eventType) {
+        return res.status(400).json({ message: 'Missing eventType.' });
+    }
+
+    const base = {
+        id: `tikfinity-test-${Date.now()}`,
+        platform: 'tiktok',
+        eventType,
+        userId: 'tikfinity-test',
+        username: 'tikfinity-test',
+        receivedAt: new Date().toISOString(),
+    };
+
+    let event = { ...base };
+    const normalizedType = normalizeText(eventType);
+    const trimmedValue = String(value || '').trim();
+
+    if (normalizedType === 'gift') {
+        event = {
+            ...base,
+            giftName: trimmedValue || 'Rose',
+            giftId: trimmedValue ? normalizeText(trimmedValue) : 'rose',
+            coins: 1,
+            repeatCount: 1,
+            repeatEnd: true,
+            giftType: 0,
+        };
+    } else if (normalizedType === 'chat') {
+        event = {
+            ...base,
+            message: trimmedValue || 'Test chat from Tikfinity',
+        };
+    } else if (normalizedType === 'like') {
+        const likeCount = Number(trimmedValue || 1);
+        event = {
+            ...base,
+            likeCount: Number.isFinite(likeCount) ? likeCount : 1,
+        };
+    }
+
+    try {
+        await handleIncomingEvent(event);
+        return res.json({ ok: true });
+    } catch (err) {
+        return res.status(500).json({ message: err.message || err });
+    }
+});
+
 app.post('/rules/:id/test', async (req, res) => {
     const { id } = req.params;
     const rule = ruleState.rules.find((entry) => entry.id === id);

@@ -46,6 +46,9 @@ const elements = {
     testGiftName: document.getElementById('testGiftName'),
     testGiftCount: document.getElementById('testGiftCount'),
     testGift: document.getElementById('testGift'),
+    tikfinityTestType: document.getElementById('tikfinityTestType'),
+    tikfinityTestValue: document.getElementById('tikfinityTestValue'),
+    tikfinityTest: document.getElementById('tikfinityTest'),
     refreshGifts: document.getElementById('refreshGifts'),
     giftList: document.getElementById('giftList'),
     giftListStatus: document.getElementById('giftListStatus'),
@@ -252,6 +255,18 @@ const sendTestEvent = async (event) => {
     }
 };
 
+const sendTikfinityTest = async (payload) => {
+    try {
+        await fetch('/test-tikfinity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+    } catch (err) {
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - tikfinity test failed`);
+    }
+};
+
 const setupControls = () => {
     const enableAudio = () => {
         if (!audioEnabled) {
@@ -281,6 +296,14 @@ const setupControls = () => {
             const event = buildTestEvent(giftName, repeatCount);
             handleEvent(event);
             void sendTestEvent(event);
+        });
+    }
+
+    if (elements.tikfinityTest) {
+        elements.tikfinityTest.addEventListener('click', () => {
+            const eventType = elements.tikfinityTestType?.value || 'gift';
+            const value = elements.tikfinityTestValue?.value || '';
+            void sendTikfinityTest({ eventType, value });
         });
     }
 

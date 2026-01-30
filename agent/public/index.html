@@ -43,6 +43,20 @@
   </section>
 
   <section class="controls">
+    <div class="test-tikfinity">
+      <select id="tikfinityTestType">
+        <option value="gift">Tikfinity Gift</option>
+        <option value="chat">Tikfinity Chat</option>
+        <option value="like">Tikfinity Like</option>
+        <option value="share">Tikfinity Share</option>
+        <option value="follow">Tikfinity Follow</option>
+      </select>
+      <input id="tikfinityTestValue" type="text" placeholder="Gift name / chat text / like count" />
+      <button id="tikfinityTest" class="button button-ghost">Test Tikfinity</button>
+    </div>
+  </section>
+
+  <section class="controls">
     <div class="upload-sound">
       <input id="soundGiftName" type="text" list="giftList" placeholder="Gift name for sound" />
       <input id="soundFile" type="file" accept="audio/*" />
