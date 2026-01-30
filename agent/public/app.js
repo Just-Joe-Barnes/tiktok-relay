@@ -77,13 +77,16 @@ const elements = {
 };
 
 const setConnectionState = (value) => {
+    if (!elements.connectionState) return;
     elements.connectionState.textContent = value;
     elements.connectionState.dataset.state = value;
 };
 
 const setAudioState = (enabled) => {
     audioEnabled = enabled;
-    elements.audioState.textContent = `audio: ${enabled ? 'on' : 'off'}`;
+    if (elements.audioState) {
+        elements.audioState.textContent = `audio: ${enabled ? 'on' : 'off'}`;
+    }
 };
 
 const normalizeText = (value) => String(value || '').trim().toLowerCase();
@@ -96,6 +99,7 @@ const formatTime = (iso) => {
 };
 
 const appendItem = (list, text) => {
+    if (!list) return;
     const item = document.createElement('li');
     item.textContent = text;
     list.prepend(item);
@@ -170,7 +174,25 @@ const formatChat = (event) => {
 
 const formatEvent = (event) => {
     const name = event.username || event.userId || 'unknown';
-    return `${formatTime(event.receivedAt)} - ${event.eventType} from ${name}`;
+    const type = event.eventType || 'event';
+    if (type === 'like') {
+        const count = event.likeCount || event.totalLikeCount || 1;
+        return `${formatTime(event.receivedAt)} - like (+${count}) from ${name}`;
+    }
+    if (type === 'share') {
+        return `${formatTime(event.receivedAt)} - share from ${name}`;
+    }
+    if (type === 'follow') {
+        return `${formatTime(event.receivedAt)} - follow from ${name}`;
+    }
+    if (type === 'member') {
+        return `${formatTime(event.receivedAt)} - join from ${name}`;
+    }
+    if (type === 'roomUser') {
+        const viewers = event.viewerCount || 'unknown';
+        return `${formatTime(event.receivedAt)} - viewers: ${viewers}`;
+    }
+    return `${formatTime(event.receivedAt)} - ${type} from ${name}`;
 };
 
 const formatLog = (event) => {
@@ -181,24 +203,29 @@ const formatLog = (event) => {
 
 const increment = (type) => {
     state.total += 1;
-    elements.totalEvents.textContent = String(state.total);
+    if (elements.totalEvents) {
+        elements.totalEvents.textContent = String(state.total);
+    }
 
     if (state.counts[type] !== undefined) {
         state.counts[type] += 1;
     }
 
-    elements.giftCount.textContent = String(state.counts.gift + state.counts.gift_streak);
-    elements.chatCount.textContent = String(state.counts.chat);
-    elements.likeCount.textContent = String(state.counts.like);
-    elements.followCount.textContent = String(state.counts.follow);
-    elements.commandCount.textContent = String(state.counts.command);
+    if (elements.giftCount) elements.giftCount.textContent = String(state.counts.gift + state.counts.gift_streak);
+    if (elements.chatCount) elements.chatCount.textContent = String(state.counts.chat);
+    if (elements.likeCount) elements.likeCount.textContent = String(state.counts.like);
+    if (elements.followCount) elements.followCount.textContent = String(state.counts.follow);
+    if (elements.commandCount) elements.commandCount.textContent = String(state.counts.command);
 };
 
 const handleEvent = (event) => {
     if (!event || !event.eventType) return;
+    if (event.eventType === 'config') return;
     increment(event.eventType);
 
-    elements.lastEvent.textContent = formatTime(event.receivedAt);
+    if (elements.lastEvent) {
+        elements.lastEvent.textContent = formatTime(event.receivedAt);
+    }
 
     if (event.eventType === 'gift' || event.eventType === 'gift_streak') {
         appendItem(elements.gifts, formatGift(event));
