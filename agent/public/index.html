@@ -28,48 +28,62 @@
     </div>
   </header>
 
-  <section class="controls">
-    <button id="enableAudio" class="button">Enable Audio</button>
-    <button id="testHeart" class="button button-ghost">Test Heart Me</button>
-    <div class="test-gift">
-      <input id="testGiftName" type="text" list="giftList" placeholder="Gift name (e.g. Rose)" />
-      <datalist id="giftList"></datalist>
-      <input id="testGiftCount" type="number" min="1" value="1" title="Repeat count" />
-      <button id="testGift" class="button button-ghost">Test Gift</button>
+  <section class="control-grid">
+    <div class="tile">
+      <div class="tile-header">
+        <h3>Testing</h3>
+        <div class="tile-chips">
+          <span id="giftListStatus" class="chip">gifts: --</span>
+          <span id="audioState" class="chip">audio: off</span>
+        </div>
+      </div>
+      <div class="control-row">
+        <button id="enableAudio" class="button">Enable Audio</button>
+        <button id="testHeart" class="button button-ghost">Test Heart Me</button>
+        <button id="refreshGifts" class="button button-ghost">Refresh Gifts</button>
+      </div>
+      <div class="control-row">
+        <input id="testGiftName" type="text" list="giftList" placeholder="Gift name (e.g. Rose)" />
+        <datalist id="giftList"></datalist>
+        <input id="testGiftCount" type="number" min="1" value="1" title="Repeat count" />
+        <button id="testGift" class="button button-ghost">Test Gift</button>
+      </div>
+      <div class="control-row">
+        <select id="tikfinityTestType">
+          <option value="gift">Tikfinity Gift</option>
+          <option value="chat">Tikfinity Chat</option>
+          <option value="like">Tikfinity Like</option>
+          <option value="share">Tikfinity Share</option>
+          <option value="follow">Tikfinity Follow</option>
+        </select>
+        <input id="tikfinityTestValue" type="text" list="giftList" placeholder="Gift name / chat text / like count" />
+        <button id="tikfinityTest" class="button button-ghost">Test Tikfinity</button>
+      </div>
     </div>
-    <button id="refreshGifts" class="button button-ghost">Refresh Gifts</button>
-    <span id="giftListStatus" class="chip">gifts: --</span>
-    <span id="audioState" class="chip">audio: off</span>
-  </section>
 
-  <section class="controls">
-    <div class="test-tikfinity">
-      <select id="tikfinityTestType">
-        <option value="gift">Tikfinity Gift</option>
-        <option value="chat">Tikfinity Chat</option>
-        <option value="like">Tikfinity Like</option>
-        <option value="share">Tikfinity Share</option>
-        <option value="follow">Tikfinity Follow</option>
-      </select>
-      <input id="tikfinityTestValue" type="text" placeholder="Gift name / chat text / like count" />
-      <button id="tikfinityTest" class="button button-ghost">Test Tikfinity</button>
+    <div class="tile">
+      <div class="tile-header">
+        <h3>Sound Mapping</h3>
+        <span id="uploadStatus" class="chip">upload: idle</span>
+      </div>
+      <div class="control-row">
+        <input id="soundGiftName" type="text" list="giftList" placeholder="Gift name for sound" />
+        <input id="soundFile" type="file" accept="audio/*" />
+        <button id="uploadSound" class="button button-ghost">Upload Sound</button>
+      </div>
     </div>
-  </section>
 
-  <section class="controls">
-    <div class="upload-sound">
-      <input id="soundGiftName" type="text" list="giftList" placeholder="Gift name for sound" />
-      <input id="soundFile" type="file" accept="audio/*" />
-      <button id="uploadSound" class="button button-ghost">Upload Sound</button>
-      <span id="uploadStatus" class="chip">upload: idle</span>
+    <div class="tile">
+      <div class="tile-header">
+        <h3>Status</h3>
+        <button id="refreshStatus" class="button button-ghost">Refresh Status</button>
+      </div>
+      <div class="tile-chips">
+        <span id="relayStatus" class="chip">relay: --</span>
+        <span id="streamerbotStatus" class="chip">streamer.bot: --</span>
+        <span id="backendStatus" class="chip">backend: --</span>
+      </div>
     </div>
-  </section>
-
-  <section class="controls">
-    <button id="refreshStatus" class="button button-ghost">Refresh Status</button>
-    <span id="relayStatus" class="chip">relay: --</span>
-    <span id="streamerbotStatus" class="chip">streamer.bot: --</span>
-    <span id="backendStatus" class="chip">backend: --</span>
   </section>
 
   <section class="metrics">
