@@ -308,6 +308,49 @@ const sendTikfinityTest = async (payload) => {
         appendItem(elements.log, `${new Date().toLocaleTimeString()} - tikfinity test failed`);
     }
 };
+const buildLocalTikfinityEvent = (eventType, value) => {
+    const base = {
+        id: 	ikfinity-local-,
+        platform: 'tiktok',
+        eventType,
+        userId: 'tikfinity-test',
+        username: 'tikfinity-test',
+        receivedAt: new Date().toISOString(),
+    };
+
+    const trimmedValue = String(value || '').trim();
+    if (eventType === 'gift') {
+        return {
+            ...base,
+            giftName: trimmedValue || 'Rose',
+            giftId: trimmedValue ? normalizeText(trimmedValue) : 'rose',
+            coins: resolveGiftCoins(trimmedValue || 'Rose'),
+            repeatCount: 1,
+            repeatEnd: true,
+            giftType: 0,
+        };
+    }
+    if (eventType === 'chat') {
+        return {
+            ...base,
+            message: trimmedValue || 'Test chat from Tikfinity',
+        };
+    }
+    if (eventType === 'like') {
+        const countValue = Number(trimmedValue || 1);
+        return {
+            ...base,
+            likeCount: Number.isFinite(countValue) ? countValue : 1,
+        };
+    }
+    if (eventType === 'share') {
+        return base;
+    }
+    if (eventType === 'follow') {
+        return base;
+    }
+    return base;
+};
 
 const setupControls = () => {
     const enableAudio = () => {
@@ -345,6 +388,8 @@ const setupControls = () => {
         elements.tikfinityTest.addEventListener('click', () => {
             const eventType = elements.tikfinityTestType?.value || 'gift';
             const value = elements.tikfinityTestValue?.value || '';
+            const localEvent = buildLocalTikfinityEvent(eventType, value);
+            handleEvent(localEvent);
             void sendTikfinityTest({ eventType, value });
         });
     }

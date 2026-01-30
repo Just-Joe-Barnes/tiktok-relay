@@ -43,7 +43,7 @@
         <button id="refreshGifts" class="button button-ghost">Refresh Gifts</button>
       </div>
       <div class="control-row">
-        <input id="testGiftName" type="text" list="giftList" placeholder="Gift name (e.g. Rose)" />
+        <input id="testGiftName" type="text" list="giftList" autocomplete="on" placeholder="Gift name (e.g. Rose)" />
         <datalist id="giftList"></datalist>
         <input id="testGiftCount" type="number" min="1" value="1" title="Repeat count" />
         <button id="testGift" class="button button-ghost">Test Gift</button>
@@ -56,7 +56,7 @@
           <option value="share">Tikfinity Share</option>
           <option value="follow">Tikfinity Follow</option>
         </select>
-        <input id="tikfinityTestValue" type="text" list="giftList" placeholder="Gift name / chat text / like count" />
+        <input id="tikfinityTestValue" type="text" list="giftList" autocomplete="on" placeholder="Gift name / chat text / like count" />
         <button id="tikfinityTest" class="button button-ghost">Test Tikfinity</button>
       </div>
     </div>
@@ -67,7 +67,7 @@
         <span id="uploadStatus" class="chip">upload: idle</span>
       </div>
       <div class="control-row">
-        <input id="soundGiftName" type="text" list="giftList" placeholder="Gift name for sound" />
+        <input id="soundGiftName" type="text" list="giftList" autocomplete="on" placeholder="Gift name for sound" />
         <input id="soundFile" type="file" accept="audio/*" />
         <button id="uploadSound" class="button button-ghost">Upload Sound</button>
       </div>
@@ -144,7 +144,7 @@
           <option value="share">Share</option>
           <option value="like_total">Like Total ≥</option>
         </select>
-        <input id="ruleValue" type="text" list="giftList" placeholder="Gift name, command, or like threshold" />
+        <input id="ruleValue" type="text" list="giftList" autocomplete="on" placeholder="Gift name, command, or like threshold" />
         <label class="checkbox">
           <input id="ruleUseStreamerbot" type="checkbox" />
           <span>Use Streamer.bot</span>
