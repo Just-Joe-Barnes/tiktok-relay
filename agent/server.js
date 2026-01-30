@@ -684,7 +684,7 @@ app.post('/test-event', async (req, res) => {
         return res.status(400).json({ message: 'Missing eventType.' });
     }
     try {
-        await applyRules(payload);
+        await handleIncomingEvent(payload);
         return res.json({ ok: true });
     } catch (err) {
         return res.status(500).json({ message: err.message || err });
