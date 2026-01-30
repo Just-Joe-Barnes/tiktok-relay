@@ -114,8 +114,15 @@ const formatTime = (iso) => {
     return date.toLocaleTimeString();
 };
 
+const getListLimit = (list) => {
+    const max = Number.parseInt(list?.dataset?.maxItems || '', 10);
+    if (Number.isFinite(max) && max > 0) return max;
+    return MAX_ITEMS;
+};
+
 const appendItem = (list, text, options = {}) => {
     if (!list) return;
+    const limit = getListLimit(list);
     const item = document.createElement('li');
     if (options.imageUrl) {
         item.classList.add('with-icon');
@@ -131,13 +138,14 @@ const appendItem = (list, text, options = {}) => {
     span.textContent = text;
     item.appendChild(span);
     list.prepend(item);
-    if (list.children.length > MAX_ITEMS) {
+    if (list.children.length > limit) {
         list.removeChild(list.lastChild);
     }
 };
 
 const appendItemBottom = (list, text, options = {}) => {
     if (!list) return;
+    const limit = getListLimit(list);
     const item = document.createElement('li');
     if (options.imageUrl) {
         item.classList.add('with-icon');
@@ -153,7 +161,7 @@ const appendItemBottom = (list, text, options = {}) => {
     span.textContent = text;
     item.appendChild(span);
     list.appendChild(item);
-    if (list.children.length > MAX_ITEMS) {
+    if (list.children.length > limit) {
         list.removeChild(list.firstChild);
     }
     list.scrollTop = list.scrollHeight;

@@ -78,15 +78,15 @@ body.dock {
   border-radius: 14px;
   padding: 8px 10px;
   border: 1px solid #202634;
-  max-height: 240px;
+  max-height: 220px;
   overflow: hidden;
   flex: 0 0 auto;
 }
 
 .dock-gift-list {
   gap: 6px;
-  max-height: 220px;
-  overflow-y: auto;
+  max-height: 200px;
+  overflow: hidden;
 }
 
 .dock-gift-list li {
@@ -98,7 +98,7 @@ body.dock {
   line-height: 1.4;
 }
 
-.dock-feed {
+.dock-chat {
   background: #151a22;
   border-radius: 14px;
   padding: 10px;
@@ -108,14 +108,17 @@ body.dock {
   overflow: hidden;
 }
 
-.dock-feed-list {
+.dock-chat-list {
   gap: 8px;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
-.dock-feed-list li {
+.dock-chat-list li {
   background: #171c25;
   border: 1px solid #242a36;
   border-radius: 12px;
