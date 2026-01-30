@@ -7,44 +7,26 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="dock">
-  <header class="header">
-    <div>
-      <h1>TikTok Relay Dock</h1>
-      <p class="sub">Live chat, gifts, and activity.</p>
-    </div>
-    <div class="status">
-      <div class="status-item">
-        <span class="label">Connection</span>
-        <span id="connectionState" class="value">disconnected</span>
-      </div>
-      <div class="status-item">
-        <span class="label">Last Event</span>
-        <span id="lastEvent" class="value">--</span>
-      </div>
-      <div class="status-item">
-        <span class="label">Total</span>
-        <span id="totalEvents" class="value">0</span>
-      </div>
+  <header class="dock-header">
+    <div class="dock-status">
+      <span id="connectionState" class="dock-chip">disconnected</span>
+      <span id="lastEvent" class="dock-chip">--</span>
+      <span id="totalEvents" class="dock-chip">0</span>
     </div>
   </header>
 
-  <main class="grid">
-    <section class="panel">
-      <h2>Gifts</h2>
-      <ul id="gifts" class="list"></ul>
+  <main class="dock-stack">
+    <section class="dock-gifts">
+      <ul id="gifts" class="list dock-gift-list"></ul>
     </section>
 
-    <section class="panel chatbox-panel wide">
-      <h2>Chatbox</h2>
-      <ul id="chat" class="list chatbox"></ul>
-    </section>
-
-    <section class="panel">
-      <h2>Activity</h2>
-      <ul id="events" class="list"></ul>
+    <section class="dock-feed">
+      <ul id="feed" class="list dock-feed-list"></ul>
     </section>
   </main>
 
+  <ul id="chat" class="list" style="display:none;"></ul>
+  <ul id="events" class="list" style="display:none;"></ul>
   <ul id="log" class="list" style="display:none;"></ul>
 
   <script src="app.js"></script>

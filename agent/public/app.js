@@ -41,6 +41,7 @@ const elements = {
     chat: document.getElementById('chat'),
     events: document.getElementById('events'),
     log: document.getElementById('log'),
+    feed: document.getElementById('feed'),
     enableAudio: document.getElementById('enableAudio'),
     testHeart: document.getElementById('testHeart'),
     testGiftName: document.getElementById('testGiftName'),
@@ -106,6 +107,17 @@ const appendItem = (list, text) => {
     if (list.children.length > MAX_ITEMS) {
         list.removeChild(list.lastChild);
     }
+};
+
+const appendItemBottom = (list, text) => {
+    if (!list) return;
+    const item = document.createElement('li');
+    item.textContent = text;
+    list.appendChild(item);
+    if (list.children.length > MAX_ITEMS) {
+        list.removeChild(list.firstChild);
+    }
+    list.scrollTop = list.scrollHeight;
 };
 
 const playSound = async (soundUrl) => {
@@ -242,6 +254,9 @@ const handleEvent = (event) => {
     }
 
     appendItem(elements.log, formatLog(event));
+    if (elements.feed) {
+        appendItemBottom(elements.feed, formatLog(event));
+    }
 };
 
 const resolveGiftCoins = (giftName) => {

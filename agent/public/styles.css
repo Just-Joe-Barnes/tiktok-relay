@@ -19,16 +19,81 @@ body.dock {
   padding: 16px;
 }
 
-body.dock .header {
-  padding: 16px 18px;
+body.dock {
+  background: radial-gradient(circle at top, #1a1f28 0%, #0e1117 60%, #0b0d11 100%);
 }
 
-body.dock .header h1 {
-  font-size: 20px;
+.dock-header {
+  margin-bottom: 10px;
 }
 
-body.dock .grid {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+.dock-status {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dock-chip {
+  background: #1b202a;
+  border: 1px solid #242a36;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #c7cdd8;
+}
+
+#connectionState[data-state="connected"] {
+  color: #4ade80;
+}
+
+.dock-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dock-gifts {
+  background: #151a22;
+  border-radius: 14px;
+  padding: 8px 10px;
+  border: 1px solid #202634;
+  max-height: 140px;
+  overflow: hidden;
+}
+
+.dock-gift-list {
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.dock-gift-list li {
+  background: #1b202a;
+  border: 1px solid #242a36;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.dock-feed {
+  background: #151a22;
+  border-radius: 14px;
+  padding: 10px;
+  border: 1px solid #202634;
+  min-height: 420px;
+}
+
+.dock-feed-list {
+  gap: 8px;
+  min-height: 400px;
+}
+
+.dock-feed-list li {
+  background: #171c25;
+  border: 1px solid #242a36;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
 }
 
 .header {
