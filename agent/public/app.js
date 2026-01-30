@@ -1,4 +1,4 @@
-const MAX_ITEMS = 200;
+ï»¿const MAX_ITEMS = 200;
 
 const state = {
     total: 0,
@@ -175,7 +175,7 @@ const formatGift = (event) => {
     const name = event.username || event.userId || 'unknown';
     const gift = event.giftName || event.giftId || 'gift';
     const coins = event.coins || 0;
-    return ${formatTime(event.receivedAt)} •  •  ( coins);
+    return ${formatTime(event.receivedAt)} ï¿½  ï¿½  ( coins);
 };
 
 const formatChat = (event) => {
@@ -650,6 +650,12 @@ const fetchSbActions = async () => {
 const renderRulesList = (rules) => {
     if (!elements.rulesList) return;
     elements.rulesList.innerHTML = '';
+    if (!rules.length) {
+        const li = document.createElement('li');
+        li.textContent = 'No rules loaded yet.';
+        elements.rulesList.appendChild(li);
+        return;
+    }
     rules.forEach((rule) => {
         const li = document.createElement('li');
         li.className = 'rule-item';
@@ -685,13 +691,17 @@ const renderRulesList = (rules) => {
 const fetchRules = async () => {
     try {
         const response = await fetch('/rules');
+        if (!response.ok) {
+            throw new Error(`rules http ${response.status}`);
+        }
         const data = await response.json();
         renderRulesList(data);
+        const count = Array.isArray(data) ? data.length : (data?.rules?.length || 0);
+        appendItem(elements.log, `${new Date().toLocaleTimeString()} - rules loaded: ${count}`);
     } catch (err) {
         appendItem(elements.log, `${new Date().toLocaleTimeString()} - rules fetch failed`);
     }
 };
-
 const updateActionFields = () => {
     const useStreamerbot = Boolean(elements.ruleUseStreamerbot?.checked);
     const obsFields = [elements.ruleAction, elements.ruleScene, elements.ruleSource, elements.ruleFilter];
@@ -714,6 +724,7 @@ const updateHealthStatus = async () => {
             const source = data.source || 'relay';
             const connected = data.relay?.connected;
             elements.relayStatus.textContent = `source: ${source} (${connected ? 'connected' : 'disconnected'})`;
+            setConnectionState(connected ? 'connected' : 'disconnected');
             if (source === 'tikfinity' && data.tikfinity?.lastError) {
                 appendItem(elements.log, `${new Date().toLocaleTimeString()} - tikfinity error: ${data.tikfinity.lastError}`);
             }
