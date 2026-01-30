@@ -723,7 +723,8 @@ const updateHealthStatus = async () => {
         if (elements.relayStatus) {
             const source = data.source || 'relay';
             const connected = data.relay?.connected;
-            elements.relayStatus.textContent = `source: ${source} (${connected ? 'connected' : 'disconnected'})`;
+            elements.relayStatus.textContent = source:  ();
+            setConnectionState(connected ? 'connected' : 'disconnected');
             setConnectionState(connected ? 'connected' : 'disconnected');
             if (source === 'tikfinity' && data.tikfinity?.lastError) {
                 appendItem(elements.log, `${new Date().toLocaleTimeString()} - tikfinity error: ${data.tikfinity.lastError}`);
