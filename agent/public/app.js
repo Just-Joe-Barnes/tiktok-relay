@@ -52,6 +52,7 @@ const elements = {
     tikfinityTest: document.getElementById('tikfinityTest'),
     testChat: document.getElementById('testChat'),
     testShare: document.getElementById('testShare'),
+    testLike: document.getElementById('testLike'),
     refreshGifts: document.getElementById('refreshGifts'),
     giftList: document.getElementById('giftList'),
     giftListStatus: document.getElementById('giftListStatus'),
@@ -504,6 +505,15 @@ const setupControls = () => {
             const localEvent = buildLocalTikfinityEvent('share', '');
             handleEvent(localEvent);
             void sendTikfinityTest({ eventType: 'share', value: '' });
+        });
+    }
+
+    if (elements.testLike) {
+        elements.testLike.addEventListener('click', () => {
+            const countValue = elements.tikfinityTestValue?.value || '1';
+            const localEvent = buildLocalTikfinityEvent('like', countValue);
+            handleEvent(localEvent);
+            void sendTikfinityTest({ eventType: 'like', value: countValue });
         });
     }
 
