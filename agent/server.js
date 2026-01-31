@@ -47,6 +47,7 @@ const giftCache = {
     source: GIFT_LIST_URL,
     imageSource: null,
     hasImages: false,
+    byName: new Map(),
     error: null,
     lastUpdateText: null,
 };
@@ -123,6 +124,12 @@ const parseCommandsFromChat = (message) => {
     return commands;
 };
 
+const resolveGiftImageFromCache = (giftName) => {
+    const key = normalizeText(giftName);
+    if (!key) return null;
+    return giftCache.byName.get(key)?.imageUrl || null;
+};
+
 const handleIncomingEvent = async (event) => {
     if (!event || !event.eventType) return;
 
@@ -134,6 +141,12 @@ const handleIncomingEvent = async (event) => {
             likeState.totalLikes += Number(event.likeCount || 1);
         }
         event.totalLikeCount = likeState.totalLikes;
+    }
+
+    if (normalizeText(event.eventType) === 'gift' || normalizeText(event.eventType) === 'gift_streak') {
+        if (!event.imageUrl) {
+            event.imageUrl = resolveGiftImageFromCache(event.giftName || event.giftId);
+        }
     }
 
     lastRelayEventAt = new Date().toISOString();
@@ -518,6 +531,11 @@ const refreshGiftList = async () => {
     giftCache.lastUpdateText = parsed.lastUpdateText;
     giftCache.hasImages = hasImages;
     giftCache.imageSource = imageSource;
+    giftCache.byName = new Map();
+    giftCache.gifts.forEach((gift) => {
+        if (!gift.name) return;
+        giftCache.byName.set(normalizeText(gift.name), gift);
+    });
 };
 
 app.get('/gifts', async (req, res) => {
