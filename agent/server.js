@@ -25,6 +25,7 @@ const COMMAND_PREFIXES = (process.env.COMMAND_PREFIXES || '!')
 const AGENT_STREAM_BUFFER_MAX = Math.max(0, parseInt(process.env.AGENT_STREAM_BUFFER_MAX || '200', 10));
 const DEFAULT_GIFT_LIST_URL = 'https://www.beetgames.com/gift_data.js';
 const GIFT_LIST_URL = process.env.GIFT_LIST_URL || DEFAULT_GIFT_LIST_URL;
+const GIFT_IMAGE_FALLBACK_URL = 'https://www.beetgames.com/gift_data.js';
 const GIFT_LIST_CACHE_MS = Math.max(60_000, parseInt(process.env.GIFT_LIST_CACHE_MS || '43200000', 10));
 const SOUNDS_DIR = path.join(__dirname, 'public', 'sounds');
 const DATA_DIR = path.join(__dirname, 'data');
@@ -44,6 +45,8 @@ const giftCache = {
     updatedAt: 0,
     gifts: [],
     source: GIFT_LIST_URL,
+    imageSource: null,
+    hasImages: false,
     error: null,
     lastUpdateText: null,
 };
@@ -471,16 +474,50 @@ const parseGiftList = (body) => {
     return parseGiftListFromHtml(body);
 };
 
+const mergeGiftImages = (primary, images) => {
+    const imageMap = new Map();
+    images.forEach((gift) => {
+        imageMap.set(normalizeText(gift.name), gift);
+    });
+    let hasImages = false;
+    const merged = primary.map((gift) => {
+        const match = imageMap.get(normalizeText(gift.name));
+        const imageUrl = gift.imageUrl || match?.imageUrl || null;
+        if (imageUrl) hasImages = true;
+        return { ...gift, imageUrl };
+    });
+    return { gifts: merged, hasImages };
+};
+
 const refreshGiftList = async () => {
     const html = await fetchUrl(GIFT_LIST_URL);
-    const parsed = parseGiftList(html);
+    let parsed = parseGiftList(html);
     if (!parsed.gifts.length) {
         throw new Error('Gift list parse returned 0 items');
     }
+
+    let hasImages = parsed.gifts.some((gift) => Boolean(gift.imageUrl));
+    let imageSource = hasImages ? GIFT_LIST_URL : null;
+
+    if (!hasImages && GIFT_LIST_URL !== GIFT_IMAGE_FALLBACK_URL) {
+        try {
+            const imageBody = await fetchUrl(GIFT_IMAGE_FALLBACK_URL);
+            const imageParsed = parseGiftDataJs(imageBody);
+            const merged = mergeGiftImages(parsed.gifts, imageParsed.gifts);
+            parsed = { ...parsed, gifts: merged.gifts };
+            hasImages = merged.hasImages;
+            imageSource = hasImages ? GIFT_IMAGE_FALLBACK_URL : null;
+        } catch (err) {
+            console.warn('[agent] gift image fallback failed:', err.message || err);
+        }
+    }
+
     giftCache.gifts = parsed.gifts;
     giftCache.updatedAt = Date.now();
     giftCache.error = null;
     giftCache.lastUpdateText = parsed.lastUpdateText;
+    giftCache.hasImages = hasImages;
+    giftCache.imageSource = imageSource;
 };
 
 app.get('/gifts', async (req, res) => {
@@ -497,6 +534,8 @@ app.get('/gifts', async (req, res) => {
 
     res.json({
         source: giftCache.source,
+        imageSource: giftCache.imageSource,
+        hasImages: giftCache.hasImages,
         updatedAt: giftCache.updatedAt || null,
         lastUpdateText: giftCache.lastUpdateText,
         gifts: giftCache.gifts,

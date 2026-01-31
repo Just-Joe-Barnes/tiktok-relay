@@ -287,7 +287,10 @@ const handleEvent = (event) => {
     }
 
     if (event.eventType === 'gift' || event.eventType === 'gift_streak') {
-        const imageUrl = resolveGiftImage(event.giftName || event.giftId);
+        const imageUrl = resolveGiftImage(event.giftName || event.giftId)
+            || event.imageUrl
+            || event.giftImage
+            || event.giftImageUrl;
         appendItemBottom(elements.gifts, formatGift(event), { imageUrl, alt: event.giftName || 'gift' });
         handleGiftSounds(event);
         if (elements.chat) {
@@ -311,7 +314,10 @@ const handleEvent = (event) => {
     }
 
     const logImage = event.eventType === 'gift' || event.eventType === 'gift_streak'
-        ? resolveGiftImage(event.giftName || event.giftId)
+        ? (resolveGiftImage(event.giftName || event.giftId)
+            || event.imageUrl
+            || event.giftImage
+            || event.giftImageUrl)
         : null;
     appendItem(elements.log, formatLog(event), { imageUrl: logImage, alt: event.giftName || 'gift' });
     if (elements.feed) {
@@ -617,7 +623,9 @@ const fetchGiftList = async (refresh = false) => {
             return;
         }
         renderGiftList(data.gifts || []);
-        elements.giftListStatus.textContent = `gifts: ${data.gifts?.length || 0}`;
+        const count = data.gifts?.length || 0;
+        const imageNote = data.hasImages === false ? ' (no images)' : '';
+        elements.giftListStatus.textContent = `gifts: ${count}${imageNote}`;
         if (elements.rulesList) {
             await fetchRules();
         }
