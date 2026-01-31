@@ -557,7 +557,6 @@ const setupControls = () => {
     const enableAudio = () => {
         if (!audioEnabled) {
             setAudioState(true);
-            void playSound('/sounds/heart-me.mp3');
         }
     };
 
@@ -570,7 +569,7 @@ const setupControls = () => {
 
     if (elements.testHeart) {
         elements.testHeart.addEventListener('click', () => {
-            handleEvent(buildTestEvent());
+            void sendTestEvent(buildTestEvent());
         });
     }
 
@@ -580,7 +579,6 @@ const setupControls = () => {
             const countValue = Number(elements.testGiftCount?.value || 1);
             const repeatCount = Number.isFinite(countValue) && countValue > 0 ? countValue : 1;
             const event = buildTestEvent(giftName, repeatCount);
-            handleEvent(event);
             void sendTestEvent(event);
         });
     }
@@ -589,8 +587,6 @@ const setupControls = () => {
         elements.tikfinityTest.addEventListener('click', () => {
             const eventType = elements.tikfinityTestType?.value || 'gift';
             const value = elements.tikfinityTestValue?.value || '';
-            const localEvent = buildLocalTikfinityEvent(eventType, value);
-            handleEvent(localEvent);
             void sendTikfinityTest({ eventType, value });
         });
     }
@@ -598,16 +594,12 @@ const setupControls = () => {
     if (elements.testChat) {
         elements.testChat.addEventListener('click', () => {
             const message = elements.tikfinityTestValue?.value || 'Test chat from Tikfinity';
-            const localEvent = buildLocalTikfinityEvent('chat', message);
-            handleEvent(localEvent);
             void sendTikfinityTest({ eventType: 'chat', value: message });
         });
     }
 
     if (elements.testShare) {
         elements.testShare.addEventListener('click', () => {
-            const localEvent = buildLocalTikfinityEvent('share', '');
-            handleEvent(localEvent);
             void sendTikfinityTest({ eventType: 'share', value: '' });
         });
     }
@@ -615,8 +607,6 @@ const setupControls = () => {
     if (elements.testLike) {
         elements.testLike.addEventListener('click', () => {
             const countValue = elements.tikfinityTestValue?.value || '1';
-            const localEvent = buildLocalTikfinityEvent('like', countValue);
-            handleEvent(localEvent);
             void sendTikfinityTest({ eventType: 'like', value: countValue });
         });
     }
