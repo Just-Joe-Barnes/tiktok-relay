@@ -13,6 +13,9 @@ const state = {
     },
 };
 
+const LIKE_CHAT_COOLDOWN_MS = 60_000;
+const likeChatCooldownByUser = new Map();
+
 const giftSoundRules = [
     {
         match: 'heart me',
@@ -323,6 +326,18 @@ const handleEvent = (event) => {
         appendItemBottom(elements.events, text, { eventType: 'share' });
         if (elements.chat) {
             appendItemBottom(elements.chat, text, { eventType: 'share' });
+        }
+    } else if (event.eventType === 'like') {
+        const text = formatEvent(event);
+        appendItemBottom(elements.events, text, { eventType: 'like' });
+        const userKey = normalizeText(event.username || event.userId || 'unknown');
+        const now = Date.now();
+        const lastShown = likeChatCooldownByUser.get(userKey) || 0;
+        if (now - lastShown >= LIKE_CHAT_COOLDOWN_MS) {
+            likeChatCooldownByUser.set(userKey, now);
+            if (elements.chat) {
+                appendItemBottom(elements.chat, text, { eventType: 'like' });
+            }
         }
     } else {
         appendItemBottom(elements.events, formatEvent(event), { eventType: event.eventType || 'event' });
