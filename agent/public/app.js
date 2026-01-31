@@ -124,6 +124,9 @@ const appendItem = (list, text, options = {}) => {
     if (!list) return;
     const limit = getListLimit(list);
     const item = document.createElement('li');
+    if (options.eventType) {
+        item.classList.add(`event-${options.eventType}`);
+    }
     if (options.imageUrl) {
         item.classList.add('with-icon');
         const img = document.createElement('img');
@@ -147,6 +150,9 @@ const appendItemBottom = (list, text, options = {}) => {
     if (!list) return;
     const limit = getListLimit(list);
     const item = document.createElement('li');
+    if (options.eventType) {
+        item.classList.add(`event-${options.eventType}`);
+    }
     if (options.imageUrl) {
         item.classList.add('with-icon');
         const img = document.createElement('img');
@@ -291,10 +297,18 @@ const handleEvent = (event) => {
             || event.imageUrl
             || event.giftImage
             || event.giftImageUrl;
-        appendItemBottom(elements.gifts, formatGift(event), { imageUrl, alt: event.giftName || 'gift' });
+        appendItemBottom(elements.gifts, formatGift(event), {
+            imageUrl,
+            alt: event.giftName || 'gift',
+            eventType: 'gift',
+        });
         handleGiftSounds(event);
         if (elements.chat) {
-            appendItemBottom(elements.chat, formatGift(event), { imageUrl, alt: event.giftName || 'gift' });
+            appendItemBottom(elements.chat, formatGift(event), {
+                imageUrl,
+                alt: event.giftName || 'gift',
+                eventType: 'gift',
+            });
         }
     } else if (event.eventType === 'chat') {
         appendItemBottom(elements.chat, formatChat(event));
@@ -305,12 +319,12 @@ const handleEvent = (event) => {
         }));
     } else if (event.eventType === 'share') {
         const text = formatEvent(event);
-        appendItemBottom(elements.events, text);
+        appendItemBottom(elements.events, text, { eventType: 'share' });
         if (elements.chat) {
-            appendItemBottom(elements.chat, text);
+            appendItemBottom(elements.chat, text, { eventType: 'share' });
         }
     } else {
-        appendItemBottom(elements.events, formatEvent(event));
+        appendItemBottom(elements.events, formatEvent(event), { eventType: event.eventType || 'event' });
     }
 
     const logImage = event.eventType === 'gift' || event.eventType === 'gift_streak'
@@ -319,9 +333,17 @@ const handleEvent = (event) => {
             || event.giftImage
             || event.giftImageUrl)
         : null;
-    appendItem(elements.log, formatLog(event), { imageUrl: logImage, alt: event.giftName || 'gift' });
+    appendItem(elements.log, formatLog(event), {
+        imageUrl: logImage,
+        alt: event.giftName || 'gift',
+        eventType: event.eventType || 'event',
+    });
     if (elements.feed) {
-        appendItemBottom(elements.feed, formatLog(event), { imageUrl: logImage, alt: event.giftName || 'gift' });
+        appendItemBottom(elements.feed, formatLog(event), {
+            imageUrl: logImage,
+            alt: event.giftName || 'gift',
+            eventType: event.eventType || 'event',
+        });
     }
 };
 

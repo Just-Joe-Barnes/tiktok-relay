@@ -78,14 +78,14 @@ body.dock {
   border-radius: 14px;
   padding: 8px 10px;
   border: 1px solid #202634;
-  max-height: 220px;
+  max-height: 280px;
   overflow: hidden;
   flex: 0 0 auto;
 }
 
 .dock-gift-list {
   gap: 6px;
-  max-height: 200px;
+  max-height: 260px;
   overflow: hidden;
 }
 
@@ -124,6 +124,33 @@ body.dock {
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 13px;
+}
+
+.event-gift {
+  border-color: rgba(251, 113, 133, 0.5);
+  background: rgba(251, 113, 133, 0.12);
+}
+
+.event-share {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.event-follow,
+.event-member,
+.event-roomuser {
+  border-color: rgba(34, 197, 94, 0.45);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.event-like {
+  border-color: rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.event-command {
+  border-color: rgba(167, 139, 250, 0.5);
+  background: rgba(167, 139, 250, 0.12);
 }
 
 .header {
