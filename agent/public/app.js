@@ -124,6 +124,53 @@ const getListLimit = (list) => {
     return MAX_ITEMS;
 };
 
+const renderLineContent = (container, content) => {
+    if (typeof content === 'string') {
+        container.textContent = content;
+        return;
+    }
+
+    const time = content?.time;
+    const username = content?.username;
+    const message = content?.message;
+
+    let hasTime = false;
+    let hasUser = false;
+
+    if (time) {
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'item-time';
+        timeSpan.textContent = time;
+        container.appendChild(timeSpan);
+        hasTime = true;
+    }
+
+    if (username) {
+        if (hasTime) {
+            container.appendChild(document.createTextNode(' - '));
+        }
+        const userSpan = document.createElement('strong');
+        userSpan.className = 'item-user';
+        userSpan.textContent = username;
+        container.appendChild(userSpan);
+        hasUser = true;
+    }
+
+    if (message) {
+        if (hasUser) {
+            if (!message.startsWith(':')) {
+                container.appendChild(document.createTextNode(' '));
+            }
+        } else if (hasTime) {
+            container.appendChild(document.createTextNode(' - '));
+        }
+        const messageSpan = document.createElement('span');
+        messageSpan.className = 'item-message';
+        messageSpan.textContent = message;
+        container.appendChild(messageSpan);
+    }
+};
+
 const appendItem = (list, text, options = {}) => {
     if (!list) return;
     const limit = getListLimit(list);
@@ -142,7 +189,7 @@ const appendItem = (list, text, options = {}) => {
     }
     const span = document.createElement('span');
     span.className = 'item-text';
-    span.textContent = text;
+    renderLineContent(span, text);
     item.appendChild(span);
     list.prepend(item);
     if (list.children.length > limit) {
@@ -168,7 +215,7 @@ const appendItemBottom = (list, text, options = {}) => {
     }
     const span = document.createElement('span');
     span.className = 'item-text';
-    span.textContent = text;
+    renderLineContent(span, text);
     item.appendChild(span);
     list.appendChild(item);
     if (list.children.length > limit) {
@@ -228,46 +275,91 @@ const handleGiftSounds = (event) => {
     void playSound(soundUrl);
 };
 
-const formatGift = (event) => {
+const buildGiftLine = (event) => {
     const name = event.username || event.userId || 'unknown';
     const gift = event.giftName || event.giftId || 'gift';
     const coins = event.coins || 0;
-    return `${formatTime(event.receivedAt)} - ${name} sent ${gift} (${coins} coins)`;
+    return {
+        time: formatTime(event.receivedAt),
+        username: name,
+        message: `sent ${gift} (${coins} coins)`,
+    };
 };
 
-const formatChat = (event) => {
+const buildChatLine = (event) => {
     const name = event.username || event.userId || 'unknown';
     const message = event.message || '';
-    return `${formatTime(event.receivedAt)} - ${name}: ${message}`;
+    return {
+        time: formatTime(event.receivedAt),
+        username: name,
+        message: `: ${message}`,
+    };
 };
 
-const formatEvent = (event) => {
+const buildCommandLine = (event) => {
+    const name = event.username || event.userId || 'unknown';
+    return {
+        time: formatTime(event.receivedAt),
+        username: name,
+        message: `: command ${event.command}`,
+    };
+};
+
+const buildEventLine = (event) => {
     const name = event.username || event.userId || 'unknown';
     const type = event.eventType || 'event';
     if (type === 'like') {
         const count = event.likeCount || event.totalLikeCount || 1;
-        return `${formatTime(event.receivedAt)} - like (+${count}) from ${name}`;
+        return {
+            time: formatTime(event.receivedAt),
+            username: name,
+            message: `liked (+${count})`,
+        };
     }
     if (type === 'share') {
-        return `${formatTime(event.receivedAt)} - share from ${name}`;
+        return {
+            time: formatTime(event.receivedAt),
+            username: name,
+            message: 'shared the live',
+        };
     }
     if (type === 'follow') {
-        return `${formatTime(event.receivedAt)} - follow from ${name}`;
+        return {
+            time: formatTime(event.receivedAt),
+            username: name,
+            message: 'followed',
+        };
     }
     if (type === 'member') {
-        return `${formatTime(event.receivedAt)} - join from ${name}`;
+        return {
+            time: formatTime(event.receivedAt),
+            username: name,
+            message: 'joined',
+        };
     }
     if (type === 'roomUser') {
         const viewers = event.viewerCount || 'unknown';
-        return `${formatTime(event.receivedAt)} - viewers: ${viewers}`;
+        return {
+            time: formatTime(event.receivedAt),
+            message: `viewers: ${viewers}`,
+        };
     }
-    return `${formatTime(event.receivedAt)} - ${type} from ${name}`;
+    return {
+        time: formatTime(event.receivedAt),
+        username: name,
+        message: type,
+    };
 };
 
-const formatLog = (event) => {
+const buildLogLine = (event) => {
     const name = event.username || event.userId || 'unknown';
     const details = event.message || event.giftName || event.command || '';
-    return `${formatTime(event.receivedAt)} - ${event.eventType} - ${name} ${details}`.trim();
+    const suffix = details ? ` ${details}` : '';
+    return {
+        time: formatTime(event.receivedAt),
+        username: name,
+        message: `${event.eventType}${suffix}`,
+    };
 };
 
 const increment = (type) => {
@@ -301,46 +393,43 @@ const handleEvent = (event) => {
             || event.imageUrl
             || event.giftImage
             || event.giftImageUrl;
-        appendItemBottom(elements.gifts, formatGift(event), {
+        appendItemBottom(elements.gifts, buildGiftLine(event), {
             imageUrl,
             alt: event.giftName || 'gift',
             eventType: 'gift',
         });
         handleGiftSounds(event);
         if (elements.chat) {
-            appendItemBottom(elements.chat, formatGift(event), {
+            appendItemBottom(elements.chat, buildGiftLine(event), {
                 imageUrl,
                 alt: event.giftName || 'gift',
                 eventType: 'gift',
             });
         }
     } else if (event.eventType === 'chat') {
-        appendItemBottom(elements.chat, formatChat(event));
+        appendItemBottom(elements.chat, buildChatLine(event));
     } else if (event.eventType === 'command') {
-        appendItemBottom(elements.chat, formatChat({
-            ...event,
-            message: `command: ${event.command}`,
-        }));
+        appendItemBottom(elements.chat, buildCommandLine(event));
     } else if (event.eventType === 'share') {
-        const text = formatEvent(event);
-        appendItemBottom(elements.events, text, { eventType: 'share' });
+        const line = buildEventLine(event);
+        appendItemBottom(elements.events, line, { eventType: 'share' });
         if (elements.chat) {
-            appendItemBottom(elements.chat, text, { eventType: 'share' });
+            appendItemBottom(elements.chat, line, { eventType: 'share' });
         }
     } else if (event.eventType === 'like') {
-        const text = formatEvent(event);
-        appendItemBottom(elements.events, text, { eventType: 'like' });
+        const line = buildEventLine(event);
+        appendItemBottom(elements.events, line, { eventType: 'like' });
         const userKey = normalizeText(event.username || event.userId || 'unknown');
         const now = Date.now();
         const lastShown = likeChatCooldownByUser.get(userKey) || 0;
         if (now - lastShown >= LIKE_CHAT_COOLDOWN_MS) {
             likeChatCooldownByUser.set(userKey, now);
             if (elements.chat) {
-                appendItemBottom(elements.chat, text, { eventType: 'like' });
+                appendItemBottom(elements.chat, line, { eventType: 'like' });
             }
         }
     } else {
-        appendItemBottom(elements.events, formatEvent(event), { eventType: event.eventType || 'event' });
+        appendItemBottom(elements.events, buildEventLine(event), { eventType: event.eventType || 'event' });
     }
 
     const logImage = event.eventType === 'gift' || event.eventType === 'gift_streak'
@@ -349,13 +438,13 @@ const handleEvent = (event) => {
             || event.giftImage
             || event.giftImageUrl)
         : null;
-    appendItem(elements.log, formatLog(event), {
+    appendItem(elements.log, buildLogLine(event), {
         imageUrl: logImage,
         alt: event.giftName || 'gift',
         eventType: event.eventType || 'event',
     });
     if (elements.feed) {
-        appendItemBottom(elements.feed, formatLog(event), {
+        appendItemBottom(elements.feed, buildLogLine(event), {
             imageUrl: logImage,
             alt: event.giftName || 'gift',
             eventType: event.eventType || 'event',
