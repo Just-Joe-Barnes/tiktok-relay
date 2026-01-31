@@ -126,32 +126,6 @@ body.dock {
   font-size: 13px;
 }
 
-.event-gift {
-  border-color: rgba(251, 113, 133, 0.5);
-  background: rgba(251, 113, 133, 0.12);
-}
-
-.event-share {
-  border-color: rgba(59, 130, 246, 0.5);
-  background: rgba(59, 130, 246, 0.12);
-}
-
-.event-follow,
-.event-member,
-.event-roomuser {
-  border-color: rgba(34, 197, 94, 0.45);
-  background: rgba(34, 197, 94, 0.12);
-}
-
-.event-like {
-  border-color: rgba(251, 191, 36, 0.45);
-  background: rgba(251, 191, 36, 0.12);
-}
-
-.event-command {
-  border-color: rgba(167, 139, 250, 0.5);
-  background: rgba(167, 139, 250, 0.12);
-}
 
 .header {
   display: flex;
@@ -593,4 +567,52 @@ input[type="file"] {
   .chatbox-panel {
     min-height: 320px;
   }
+}
+
+.list li.event-gift,
+.chatbox li.event-gift,
+.dock-chat-list li.event-gift,
+.dock-gift-list li.event-gift {
+  border-color: rgba(251, 113, 133, 0.6);
+  background: rgba(251, 113, 133, 0.16);
+}
+
+.list li.event-share,
+.chatbox li.event-share,
+.dock-chat-list li.event-share,
+.dock-gift-list li.event-share {
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.16);
+}
+
+.list li.event-follow,
+.list li.event-member,
+.list li.event-roomuser,
+.chatbox li.event-follow,
+.chatbox li.event-member,
+.chatbox li.event-roomuser,
+.dock-chat-list li.event-follow,
+.dock-chat-list li.event-member,
+.dock-chat-list li.event-roomuser,
+.dock-gift-list li.event-follow,
+.dock-gift-list li.event-member,
+.dock-gift-list li.event-roomuser {
+  border-color: rgba(34, 197, 94, 0.55);
+  background: rgba(34, 197, 94, 0.16);
+}
+
+.list li.event-like,
+.chatbox li.event-like,
+.dock-chat-list li.event-like,
+.dock-gift-list li.event-like {
+  border-color: rgba(251, 191, 36, 0.6);
+  background: rgba(251, 191, 36, 0.16);
+}
+
+.list li.event-command,
+.chatbox li.event-command,
+.dock-chat-list li.event-command,
+.dock-gift-list li.event-command {
+  border-color: rgba(167, 139, 250, 0.6);
+  background: rgba(167, 139, 250, 0.16);
 }
