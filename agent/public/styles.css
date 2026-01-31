@@ -638,3 +638,14 @@ input[type="file"] {
   border-color: rgba(167, 139, 250, 0.6);
   background: rgba(167, 139, 250, 0.16);
 }
+
+body.dock .dock-chat-list,
+body.dock .dock-gift-list {
+  overflow: hidden;
+}
+
+body.dock .dock-chat-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
