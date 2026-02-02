@@ -16,7 +16,7 @@ body {
 }
 
 body.dock {
-  padding: 16px;
+  padding: clamp(10px, 2.5vh, 16px);
 }
 
 body.dock {
@@ -78,15 +78,17 @@ body.dock {
   border-radius: 14px;
   padding: 8px 10px;
   border: 1px solid #202634;
-  max-height: 280px;
+  max-height: clamp(120px, 28vh, 240px);
   overflow: hidden;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-height: 0;
 }
 
 .dock-gift-list {
   gap: 6px;
-  max-height: 260px;
-  overflow: hidden;
+  max-height: none;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .dock-gift-list li {
@@ -104,7 +106,7 @@ body.dock {
   padding: 10px;
   border: 1px solid #202634;
   flex: 1 1 auto;
-  min-height: 200px;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -112,10 +114,13 @@ body.dock {
   gap: 8px;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  scrollbar-width: thin;
+  scrollbar-color: #2a3140 transparent;
 }
 
 .dock-chat-list li {
@@ -641,11 +646,18 @@ input[type="file"] {
 
 body.dock .dock-chat-list,
 body.dock .dock-gift-list {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
 body.dock .dock-chat-list {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+}
+
+body.dock .dock-chat-list::-webkit-scrollbar,
+body.dock .dock-gift-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }

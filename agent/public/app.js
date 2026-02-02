@@ -221,7 +221,11 @@ const appendItemBottom = (list, text, options = {}) => {
     if (list.children.length > limit) {
         list.removeChild(list.firstChild);
     }
-    list.scrollTop = list.scrollHeight;
+    const scrollToBottom = () => {
+        list.scrollTop = list.scrollHeight;
+    };
+    scrollToBottom();
+    requestAnimationFrame(scrollToBottom);
 };
 
 const playSound = async (soundUrl) => {
