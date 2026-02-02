@@ -197,6 +197,17 @@ const appendItem = (list, text, options = {}) => {
     }
 };
 
+const isDockView = () => document.body?.classList?.contains('dock');
+
+const ensureListBottom = (list) => {
+    if (!list) return;
+    const last = list.lastElementChild;
+    if (last) {
+        last.scrollIntoView({ block: 'end' });
+    }
+    list.scrollTop = list.scrollHeight;
+};
+
 const appendItemBottom = (list, text, options = {}) => {
     if (!list) return;
     const limit = getListLimit(list);
@@ -226,6 +237,9 @@ const appendItemBottom = (list, text, options = {}) => {
     };
     scrollToBottom();
     requestAnimationFrame(scrollToBottom);
+    if (isDockView()) {
+        setTimeout(() => ensureListBottom(list), 60);
+    }
 };
 
 const playSound = async (soundUrl) => {
