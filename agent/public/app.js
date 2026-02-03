@@ -208,6 +208,12 @@ const ensureListBottom = (list) => {
     list.scrollTop = list.scrollHeight;
 };
 
+const startDockAutoScroll = () => {
+    if (!isDockView()) return;
+    if (!elements.chat) return;
+    setInterval(() => ensureListBottom(elements.chat), 500);
+};
+
 const appendItemBottom = (list, text, options = {}) => {
     if (!list) return;
     const limit = getListLimit(list);
@@ -1052,6 +1058,7 @@ fetchSbStatus();
 fetchSbActions();
 updateActionFields();
 updateHealthStatus();
+startDockAutoScroll();
 
 if (elements.refreshGifts) {
     elements.refreshGifts.addEventListener('click', () => {
